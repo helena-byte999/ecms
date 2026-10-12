@@ -111,6 +111,8 @@ npm start                   # opens http://localhost:3000
 | Variable | Description |
 |----------|-------------|
 | `REACT_APP_BackEndHost` | URL of the API the frontend calls |
+| `REACT_APP_CURRENCY` | Currency invoices are shown in, as an ISO code (`GBP`, `NGN`, `USD`…). Each deployment serves one care home, so this is set per deployment. Defaults to `GBP`. |
+| `REACT_APP_LOCALE` | Number and date formatting, e.g. `en-GB`, `en-NG`. Defaults to `en-GB`. |
 
 > **Note:** real secrets are never committed — only `.env.example` templates are tracked, and `.env` is gitignored.
 

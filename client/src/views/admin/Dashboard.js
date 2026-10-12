@@ -100,11 +100,9 @@ function Dashboard() {
         </Row>
         <Row>
           <Col md={6}>
-            <h5>Contracts</h5>
             <Contracts isDashboard={true} />
           </Col>
           <Col md={6}>
-            <h5>Schedule</h5>
             <Schedules />
           </Col>
         </Row>

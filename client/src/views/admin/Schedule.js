@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { schedule } from "data/api";
-import { BsArrowBarLeft, BsPlusSquareFill, BsEye } from "react-icons/bs";
+import { BsArrowBarLeft } from "react-icons/bs";
+import { ListHeader, DateCell, AvatarStack, IconButton } from "components/ui/ListUI.js";
+import { FiEye } from "react-icons/fi";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
 
@@ -14,9 +16,6 @@ import {
   Table,
   Row,
   Col,
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
   Input,
   Form,
   FormGroup,
@@ -59,8 +58,7 @@ function Schedules() {
                 getFirstAndLast(temp);
               }
 
-              if (pagination.current === 1)
-                setPagination({ ...pagination, count: response.data.count });
+              setPagination((p) => ({ ...p, count: response.data.count }));
             } else {
               setNotificationDetails({
                 msg: "Error Loading Schedules, Please Referesh The Page",
@@ -73,7 +71,7 @@ function Schedules() {
       fetchSchedules();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search],
+    [search, pagination.current],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
@@ -143,76 +141,68 @@ function Schedules() {
       <div className="content">
         {mode === "all" ? (
           <>
-            <Row style={{ marginTop: "-30px" }}>
-              <Col style={{ padding: "20px" }}>
-                <h5>Total: {pagination.count || 0}</h5>
-              </Col>
-              <Col style={{ paddingTop: "22px" }}>
-                <InputGroup style={{ borderColor: "#ccc" }}>
-                  <Input
-                    placeholder="Search..."
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                    }}
-                  />
-                  <InputGroupAddon addonType="append">
-                    <InputGroupText>
-                      <i className="nc-icon nc-zoom-split" />
-                    </InputGroupText>
-                  </InputGroupAddon>
-                </InputGroup>
-              </Col>
-              <Col md={3}>
-                <button
-                  onClick={() => {
-                    setMode("add");
-                    setCurrent({});
-                  }}
-                  className="btn btn-primary"
-                  style={{
-                    width: "100%",
-                    marginTop: "20px",
-                    marginBottom: "20px",
-                  }}
-                >
-                  <BsPlusSquareFill size={20} style={{ marginRight: "10px" }} />{" "}
-                  Add Schedule
-                </button>
-              </Col>
-            </Row>
-            <Card>
+            <Card className="ecms-list">
+              <ListHeader
+                title="Schedules"
+                count={pagination.count}
+                onSearch={(value) => {
+                  setSearch(value);
+                  setPagination((p) => ({ ...p, current: 1 }));
+                }}
+                searchPlaceholder="Search schedules"
+                actionLabel="Generate rota"
+                onAction={() => {
+                  setMode("add");
+                  setCurrent({});
+                }}
+              />
               <CardBody>
                 <Table responsive>
                   <thead>
                     <tr>
-                      <th>Start Date</th>
-                      <th>End Date</th>
                       <th>Week</th>
-                      <th>Action</th>
+                      <th>Dates</th>
+                      <th>Staff on rota</th>
+                      <th className="ecms-actions">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {schedules.map((items, key) => {
-                      return (
-                        <tr key={key}>
-                          <td>{items.start_date}</td>
-                          <td>{items.end_date}</td>
-                          <td>{items.week}</td>
-                          <td>
-                            <button
-                              onClick={() => {
-                                setMode("view");
-                                setCurrent(items);
-                              }}
-                              className="btn btn-sm"
-                              style={{ margin: "0px", padding: "5px" }}
-                            >
-                              <BsEye size={20} /> View
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {schedules.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="ecms-empty">
+                          No schedules found.
+                        </td>
+                      </tr>
+                    )}
+                    {schedules.map((items, key) => (
+                      <tr key={key}>
+                        <td>
+                          <strong className="ecms-amount">Week {items.week}</strong>
+                        </td>
+                        <td>
+                          <DateCell value={items.start_date} to={items.end_date} />
+                        </td>
+                        <td>
+                          <AvatarStack
+                            names={[
+                              ...new Set(
+                                Object.values(items.schedule || {})
+                                  .flat()
+                                  .map((s) => s.name),
+                              ),
+                            ]}
+                          />
+                        </td>
+                        <td className="ecms-actions">
+                          <IconButton label="View details" onClick={() => {
+                              setMode("view");
+                              setCurrent(items);
+                            }}>
+                            <FiEye />
+                          </IconButton>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </Table>
               </CardBody>

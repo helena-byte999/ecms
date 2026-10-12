@@ -3,6 +3,7 @@ import axios from "axios";
 import { schedule } from "data/api";
 import Notifications from "components/Notification/Notification";
 import { useAuth } from "contexts/AuthContext";
+import { ListHeader } from "components/ui/ListUI.js";
 
 // reactstrap components
 import { Card, CardBody, Table, Row, Col } from "reactstrap";
@@ -92,7 +93,10 @@ function Schedules() {
         {current.schedule ? (
           <Row>
             <Col col={12}>
-              <Card className="card-user">
+              <Card className="ecms-list">
+                <ListHeader
+                  title={current.week ? `Rota · Week ${current.week}` : "Rota"}
+                />
                 <CardBody>
                   <Table>
                     <thead>

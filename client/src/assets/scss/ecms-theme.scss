@@ -699,6 +699,241 @@ textarea.form-control {
   }
 }
 
+// ---------- List pages ----------
+.ecms-list {
+  .card-body {
+    padding-top: 6px;
+  }
+}
+
+.ecms-listhead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px 22px 14px;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+    }
+  }
+  &__count {
+    min-width: 28px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--teal-soft);
+    color: var(--teal-dark);
+    font-size: 12.5px;
+    font-weight: 800;
+    text-align: center;
+  }
+  &__tools {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  &__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    white-space: nowrap;
+    svg {
+      stroke-width: 2.6;
+    }
+  }
+  .ecms-tabs {
+    margin: 0;
+    max-width: 100%;
+  }
+}
+
+.ecms-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  svg {
+    position: absolute;
+    left: 12px;
+    color: #8a97a6;
+    pointer-events: none;
+  }
+  input {
+    width: 240px;
+    height: 40px;
+    padding: 0 12px 0 36px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--mist);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    &::placeholder {
+      color: #8a97a6;
+    }
+    &:focus {
+      outline: none;
+      background: #fff;
+      border-color: var(--teal);
+      box-shadow: var(--focus);
+    }
+  }
+}
+
+.ecms-av {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  &--md {
+    width: 36px;
+    height: 36px;
+    font-size: 12.5px;
+  }
+  &--sm {
+    width: 28px;
+    height: 28px;
+    font-size: 10.5px;
+    border: 2px solid #fff;
+  }
+  &--teal {
+    background: var(--teal-soft);
+    color: var(--teal-dark);
+  }
+  &--coral {
+    background: #fde9e3;
+    color: #a4462f;
+  }
+  &--navy {
+    background: #e6ebf3;
+    color: #2d4266;
+  }
+  &--amber {
+    background: #fdf1d8;
+    color: #8a5a07;
+  }
+  &--plum {
+    background: #f1e8f5;
+    color: #6d3f80;
+  }
+}
+
+.ecms-avstack {
+  display: inline-flex;
+  align-items: center;
+  .ecms-av + .ecms-av {
+    margin-left: -6px;
+  }
+  &__more {
+    margin-left: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--muted);
+  }
+}
+
+.ecms-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  &__text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    min-width: 0;
+    strong {
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 14px;
+    }
+    small {
+      color: var(--muted);
+      font-size: 12.5px;
+    }
+  }
+}
+
+.ecms-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  svg {
+    color: #8a97a6;
+  }
+}
+
+.ecms-amount {
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.ecms-muted {
+  color: var(--muted);
+}
+
+.ecms-iconbtn {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink-soft);
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  &:hover {
+    border-color: var(--teal);
+    color: var(--teal-dark);
+    background: var(--teal-soft);
+  }
+  & + & {
+    margin-left: 6px;
+  }
+}
+
+.table .ecms-actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.ecms-empty {
+  padding: 36px 12px !important;
+  text-align: center;
+  color: var(--muted);
+}
+
+@media (max-width: 991px) {
+  .ecms-listhead {
+    padding: 18px 16px 12px;
+    &__tools {
+      width: 100%;
+    }
+  }
+  .ecms-search {
+    flex: 1 1 200px;
+    input {
+      width: 100%;
+    }
+  }
+}
+
 // Template draws an arrow on the active sidebar item; not part of this design
 .sidebar .sidebar-wrapper li.active > a::before,
 .sidebar .sidebar-wrapper li.active > a::after {

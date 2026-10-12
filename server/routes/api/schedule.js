@@ -6,6 +6,7 @@ const { auth, requireRole } = require('../../middleware/auth');
 // Schedule Model
 const Users = require('../../models/User');
 const Schedule = require('../../models/Schedule');
+const { searchFilter, pageOf } = require('../../utils/search');
 
 router.post('/add_schedule', auth, requireRole('admin'), async (req, res) => {
 	const { first, last, week } = req.body;
@@ -57,18 +58,12 @@ router.post('/add_schedule', auth, requireRole('admin'), async (req, res) => {
 });
 
 router.get('/show_all_schedules', auth, async (req, res) => {
-	const { current, search } = req.query;
 	try {
-		let skip = 0;
-		let take = 100; //in the case current page is not specified
-		if (current) {
-			skip = (current - 1) * 10
-			take = 10;
-		}
-		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
-		let sch = await Schedule.find().sort({ start_date: -1, week: -1 }).skip(skip).limit(take);
-		if (!sch) { res.status(400).send({ status: false, error: 'Problem with the query or schedule not found' }) };
-		res.status(200).send({ status: true, data: sch, count: sch.length || 0 });
+		const { skip, take } = pageOf(req.query);
+		const filter = searchFilter(req.query.search, ['week', 'start_date', 'end_date']);
+		const sch = await Schedule.find(filter).sort({ start_date: -1, week: -1 }).skip(skip).limit(take);
+		const count = await Schedule.countDocuments(filter);
+		res.status(200).send({ status: true, data: sch, count });
 
 	} catch (err) {
 		res.status(400).json({ msg: err });

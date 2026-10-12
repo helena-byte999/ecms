@@ -8,6 +8,7 @@ const { auth, requireRole, selfOrAdmin } = require('../../middleware/auth');
 // User Model
 const Users = require('../../models/User');
 const Invoice = require('../../models/Invoice');
+const { searchFilter, pageOf } = require('../../utils/search');
 
 
 //@routes PUT api/user/editProfile
@@ -76,19 +77,13 @@ router.post('/add_user', auth, requireRole('admin'), async (req, res) => {
 });
 
 router.get('/show_users/:role', auth, requireRole('admin'), async (req, res) => {
-	const { current, search } = req.query;
 	const { role } = req.params;
 	try {
-		let skip = 0;
-		let take = 100; //in the case current page is not specified
-		if (current) {
-			skip = (current - 1) * 10;
-			take = 10;
-		}
-		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
-		let users = await Users.find({ role }).select('-password').skip(skip).limit(take);
-		if (!users) { res.status(400).send({ status: false, error: 'Problem with the query or user not found' }); };
-		res.status(200).send({ status: true, data: users, count: users.length || 0 });
+		const { skip, take } = pageOf(req.query);
+		const filter = { role, ...searchFilter(req.query.search, ['first_name', 'last_name', 'email']) };
+		const users = await Users.find(filter).select('-password').sort({ first_name: 1, last_name: 1 }).skip(skip).limit(take);
+		const count = await Users.countDocuments(filter);
+		res.status(200).send({ status: true, data: users, count });
 
 	} catch (err) {
 		res.status(400).json({ msg: err });
@@ -96,18 +91,12 @@ router.get('/show_users/:role', auth, requireRole('admin'), async (req, res) => 
 });
 
 router.get('/show_all_users', auth, requireRole('admin'), async (req, res) => {
-	const { current, search } = req.query;
 	try {
-		let skip = 0;
-		let take = 100; //in the case current page is not specified
-		if (current) {
-			skip = (current - 1) * 10;
-			take = 10;
-		}
-		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
-		let users = await Users.find().select('-password').skip(skip).limit(take);
-		if (!users) { res.status(400).send({ status: false, error: 'Problem with the query or user not found' }); };
-		res.status(200).send({ status: true, data: users, count: users.length || 0 });
+		const { skip, take } = pageOf(req.query);
+		const filter = searchFilter(req.query.search, ['first_name', 'last_name', 'email']);
+		const users = await Users.find(filter).select('-password').sort({ first_name: 1, last_name: 1 }).skip(skip).limit(take);
+		const count = await Users.countDocuments(filter);
+		res.status(200).send({ status: true, data: users, count });
 
 	} catch (err) {
 		res.status(400).json({ msg: err });

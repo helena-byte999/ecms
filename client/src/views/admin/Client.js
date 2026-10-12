@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { user } from "data/api";
-import { BsArrowBarLeft, BsPlusSquareFill, BsEye } from "react-icons/bs";
+import { BsArrowBarLeft } from "react-icons/bs";
 import { FaUserCircle } from "react-icons/fa";
+import { ListHeader, PersonCell, IconButton } from "components/ui/ListUI.js";
+import { FiEye } from "react-icons/fi";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
 
@@ -15,9 +17,6 @@ import {
   Table,
   Row,
   Col,
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
   Input,
   Form,
   FormGroup,
@@ -51,8 +50,7 @@ function Clients() {
           .then((response) => {
             if (response.data.status === true) {
               setClients(response.data.data);
-              if (pagination.current === 1)
-                setPagination({ ...pagination, count: response.data.count });
+              setPagination((p) => ({ ...p, count: response.data.count }));
             } else {
               setNotificationDetails({
                 msg: "Error Loading Clients, Please Referesh The Page",
@@ -65,7 +63,7 @@ function Clients() {
       fetchClients();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search],
+    [search, pagination.current],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
@@ -151,84 +149,72 @@ function Clients() {
       <div className="content">
         {mode === "all" ? (
           <>
-            <Row style={{ marginTop: "-30px" }}>
-              <Col style={{ padding: "20px" }}>
-                <h5>Total: {pagination.count || 0}</h5>
-              </Col>
-              <Col style={{ paddingTop: "22px" }}>
-                <InputGroup style={{ borderColor: "#ccc" }}>
-                  <Input
-                    placeholder="Search..."
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                    }}
-                  />
-                  <InputGroupAddon addonType="append">
-                    <InputGroupText>
-                      <i className="nc-icon nc-zoom-split" />
-                    </InputGroupText>
-                  </InputGroupAddon>
-                </InputGroup>
-              </Col>
-              <Col md={3}>
-                <button
-                  onClick={() => {
-                    setMode("add");
-                    setCurrent({});
-                  }}
-                  className="btn btn-primary"
-                  style={{
-                    width: "100%",
-                    marginTop: "20px",
-                    marginBottom: "20px",
-                  }}
-                >
-                  <BsPlusSquareFill size={20} style={{ marginRight: "10px" }} />{" "}
-                  Add Client
-                </button>
-              </Col>
-            </Row>
-            <Card>
+            <Card className="ecms-list">
+              <ListHeader
+                title="Clients"
+                count={pagination.count}
+                onSearch={(value) => {
+                  setSearch(value);
+                  setPagination((p) => ({ ...p, current: 1 }));
+                }}
+                searchPlaceholder="Search clients"
+                actionLabel="Add client"
+                onAction={() => {
+                  setMode("add");
+                  setCurrent({});
+                }}
+              />
               <CardBody>
                 <Table responsive>
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Email</th>
+                      <th>Client</th>
+                      <th>Age</th>
+                      <th>Phone</th>
                       <th>Status</th>
-                      <th>Action</th>
+                      <th className="ecms-actions">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {clients.map((items, key) => {
-                      return (
-                        <tr key={key}>
-                          <td>{items.first_name + " " + items.last_name}</td>
-                          <td>{items.email}</td>
-                          <td>
-                            <span
-                              className={
-                                "ecms-status ecms-status--" + statusKind(items.status)
-                              }
-                            >
-                              {items.status}
-                            </span>
-                          </td>
-                          <td>
-                            <button
-                              onClick={() => {
-                                setMode("view");
-                                setCurrent(items);
-                              }}
-                              className="btn btn-sm"
-                              style={{ margin: "0px", padding: "5px" }}
-                            >
-                              <BsEye size={20} /> View
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {clients.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="ecms-empty">
+                          No clients found.
+                        </td>
+                      </tr>
+                    )}
+                    {clients.map((items, key) => (
+                      <tr key={key}>
+                        <td>
+                          <PersonCell
+                            name={`${items.first_name} ${items.last_name}`}
+                            email={items.email}
+                          />
+                        </td>
+                        <td>{getAge(items.dob) >= 0 ? getAge(items.dob) : "–"}</td>
+                        <td className="ecms-muted">{items.phone || "–"}</td>
+                        <td>
+                          <span
+                            className={
+                              "ecms-status ecms-status--" + statusKind(items.status)
+                            }
+                          >
+                            {items.status}
+                          </span>
+                        </td>
+                        <td className="ecms-actions">
+                          <IconButton
+                            label={`View ${items.first_name} ${items.last_name}`}
+                            onClick={() => {
+                              setMode("view");
+                              setCurrent(items);
+                            }}
+                          >
+                            <FiEye />
+                          </IconButton>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </Table>
               </CardBody>

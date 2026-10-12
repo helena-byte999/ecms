@@ -3,6 +3,7 @@ const router = express.Router();
 const { auth, requireRole, selfOrAdmin } = require('../../middleware/auth');
 // Invoice
 const Invoices = require('../../models/Invoice');
+const { searchFilter, pageOf } = require('../../utils/search');
 
 router.post('/add_invoice', auth, requireRole('admin'), async (req, res) => {
 	const newInvoice = new Invoices(req.body);
@@ -22,18 +23,12 @@ router.post('/add_invoice', auth, requireRole('admin'), async (req, res) => {
 
 
 router.get('/show_invoices', auth, requireRole('admin'), async (req, res) => {
-	const { current, search } = req.query;
 	try {
-		let skip = 0;
-		let take = 100; //in the case current page is not specified
-		if (current) {
-			skip = (current - 1) * 10
-			take = 10;
-		}
-		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
-		let invoices = await Invoices.find().skip(skip).limit(take);
-		if (!invoices) { res.status(400).send({ status: false, error: 'Problem with the query or invoice not found' }) };
-		res.status(200).send({ status: true, data: invoices, count: invoices.length || 0 });
+		const { skip, take } = pageOf(req.query);
+		const filter = searchFilter(req.query.search, ['email', 'description', 'type']);
+		const invoices = await Invoices.find(filter).sort({ date_created: -1 }).skip(skip).limit(take);
+		const count = await Invoices.countDocuments(filter);
+		res.status(200).send({ status: true, data: invoices, count });
 
 	} catch (err) {
 		res.status(400).json({ msg: err });
@@ -41,18 +36,13 @@ router.get('/show_invoices', auth, requireRole('admin'), async (req, res) => {
 });
 
 router.get('/show_invoice/:email', auth, selfOrAdmin, async (req, res) => {
-	const { current, search } = req.query;
 	const { email } = req.params;
 	try {
-		let skip = 0;
-		let take = 100; //in the case current page is not specified
-		if (current) {
-			skip = (current - 1) * 10
-			take = 10;
-		}
-		let invoices = await Invoices.find({ email }).skip(skip).limit(take);
-		if (!invoices) { res.status(400).send({ status: false, error: 'Problem with the query or invoice not found' }) };
-		res.status(200).send({ status: true, data: invoices, count: invoices.length || 0 });
+		const { skip, take } = pageOf(req.query);
+		const filter = { email, ...searchFilter(req.query.search, ['description', 'type']) };
+		const invoices = await Invoices.find(filter).sort({ date_created: -1 }).skip(skip).limit(take);
+		const count = await Invoices.countDocuments(filter);
+		res.status(200).send({ status: true, data: invoices, count });
 
 	} catch (err) {
 		res.status(400).json({ msg: err });

@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { user } from "../../data/api";
-import { BsArrowBarLeft, BsPlusSquareFill, BsEye } from "react-icons/bs";
+import { BsArrowBarLeft } from "react-icons/bs";
 import { FaUserCircle } from "react-icons/fa";
+import {
+  ListHeader,
+  PersonCell,
+  DateCell,
+  IconButton,
+} from "components/ui/ListUI.js";
+import { FiEye } from "react-icons/fi";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
 
@@ -15,9 +22,6 @@ import {
   Table,
   Row,
   Col,
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
   Input,
   Form,
   FormGroup,
@@ -25,7 +29,6 @@ import {
 } from "reactstrap";
 
 function Contracts({ isDashboard }) {
-  const [contracts, setContracts] = useState([]);
   const [cts, setCts] = useState({});
   const [mode, setMode] = useState("all");
   const [current, setCurrent] = useState({ email: "" });
@@ -73,20 +76,6 @@ function Contracts({ isDashboard }) {
       });
   }
 
-  function changeCts(type) {
-    if (type === "all") {
-      setContracts(cts.all);
-    }
-    if (type === "no") {
-      setContracts(cts.no);
-    }
-    if (type === "valid") {
-      setContracts(cts.valid);
-    }
-    if (type === "expired") {
-      setContracts(cts.expired);
-    }
-  }
   useEffect(
     () => {
       async function fetchContracts() {
@@ -94,15 +83,12 @@ function Contracts({ isDashboard }) {
           .get(user.showAllContracts, { params: { ...pagination, search } })
           .then((response) => {
             if (response.data.status === true) {
-              setContracts(response.data.data);
               setCts({
                 no: response.data.noContracts,
                 expired: response.data.expired,
                 valid: response.data.valid,
                 all: response.data.data,
               });
-              if (pagination.current === 1)
-                setPagination({ ...pagination, count: response.data.count });
             } else {
               setNotificationDetails({
                 msg: "Error Loading Contracts, Please Referesh The Page",
@@ -114,8 +100,9 @@ function Contracts({ isDashboard }) {
       }
       fetchContracts();
     },
+    // search and paging happen in the browser over the full list
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search],
+    [],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
@@ -180,6 +167,26 @@ function Contracts({ isDashboard }) {
     }
   }
 
+  // Care contracts belong to clients and caregivers, not admin accounts
+  const rows = (cts[selection] || []).filter((u) => {
+    if (u.role === "admin") return false;
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(q);
+  });
+  const perPage = isDashboard ? 6 : 10;
+  const pageRows = rows.slice(
+    (pagination.current - 1) * perPage,
+    pagination.current * perPage,
+  );
+  function contractStatus(u) {
+    const latest = u.Contracts?.[0];
+    if (!latest) return ["warn", "No contract"];
+    return checkDates(latest.start_date, latest.end_date)
+      ? ["ok", "Valid"]
+      : ["bad", "Expired"];
+  }
+
   return (
     <>
       {notificationStatus === true ? (
@@ -188,129 +195,119 @@ function Contracts({ isDashboard }) {
       <div className="content">
         {mode === "all" ? (
           <>
-            {!isDashboard ? (
-              <Row style={{ marginTop: "-30px" }}>
-                <Col style={{ padding: "20px" }}>
-                  <h5>Total: {pagination.count || 0}</h5>
-                </Col>
-                <Col style={{ paddingTop: "22px" }}>
-                  <InputGroup style={{ borderColor: "#ccc" }}>
-                    <Input
-                      placeholder="Search..."
-                      onChange={(e) => {
-                        setSearch(e.target.value);
-                      }}
-                    />
-                    <InputGroupAddon addonType="append">
-                      <InputGroupText>
-                        <i className="nc-icon nc-zoom-split" />
-                      </InputGroupText>
-                    </InputGroupAddon>
-                  </InputGroup>
-                </Col>
-                <Col md={3}>
-                  <button
-                    onClick={() => {
-                      setMode("add");
-                      setCurrent({});
-                    }}
-                    className="btn btn-primary"
-                    style={{
-                      width: "100%",
-                      marginTop: "20px",
-                      marginBottom: "20px",
-                    }}
-                  >
-                    <BsPlusSquareFill
-                      size={20}
-                      style={{ marginRight: "10px" }}
-                    />{" "}
-                    Add Contract
-                  </button>
-                </Col>
-              </Row>
-            ) : null}
-            <Card>
-              <div
-                className="ecms-tabs"
-                role="tablist"
-                aria-label="Filter contracts"
+            <Card className="ecms-list">
+              <ListHeader
+                title={isDashboard ? "Contracts" : "All contracts"}
+                count={rows.length}
+                onSearch={
+                  isDashboard
+                    ? undefined
+                    : (value) => {
+                        setSearch(value);
+                        setPagination((p) => ({ ...p, current: 1 }));
+                      }
+                }
+                searchPlaceholder="Search people"
+                actionLabel="Add contract"
+                onAction={
+                  isDashboard
+                    ? undefined
+                    : () => {
+                        setMode("add");
+                        setCurrent({});
+                      }
+                }
               >
-                {[
-                  ["all", "All"],
-                  ["no", "No contract"],
-                  ["valid", "Valid"],
-                  ["expired", "Expired"],
-                ].map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    role="tab"
-                    aria-selected={selection === key}
-                    className={
-                      "ecms-tab" + (selection === key ? " is-active" : "")
-                    }
-                    onClick={() => {
-                      changeCts(key);
-                      setSelection(key);
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+                <div
+                  className="ecms-tabs"
+                  role="tablist"
+                  aria-label="Filter contracts"
+                >
+                  {[
+                    ["all", "All"],
+                    ["valid", "Valid"],
+                    ["expired", "Expired"],
+                    ["no", "No contract"],
+                  ].map(([key, label]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={selection === key}
+                      className={
+                        "ecms-tab" + (selection === key ? " is-active" : "")
+                      }
+                      onClick={() => {
+                        setSelection(key);
+                        setPagination((p) => ({ ...p, current: 1 }));
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </ListHeader>
 
               <CardBody>
                 <Table responsive>
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      {!isDashboard ? <th>Contracts</th> : null}
+                      <th>Person</th>
+                      {!isDashboard ? <th>Role</th> : null}
+                      <th>Contract ends</th>
                       <th>Status</th>
-                      {!isDashboard ? <th>Action</th> : null}
+                      {!isDashboard ? (
+                        <th className="ecms-actions">Actions</th>
+                      ) : null}
                     </tr>
                   </thead>
                   <tbody>
-                    {contracts.map((items, key) => {
+                    {pageRows.length === 0 && (
+                      <tr>
+                        <td colSpan={isDashboard ? 3 : 5} className="ecms-empty">
+                          Nobody matches this filter.
+                        </td>
+                      </tr>
+                    )}
+                    {pageRows.map((items, key) => {
+                      const [kind, label] = contractStatus(items);
+                      const latest = items.Contracts?.[0];
                       return (
                         <tr key={key}>
-                          <td>{items.first_name + " " + items.last_name}</td>
-                          <td>{items.email}</td>
-                          {!isDashboard ? (
-                            <td>{items.Contracts.length || 0}</td>
-                          ) : null}
-
                           <td>
-                            {checkDates(
-                              items?.Contracts[0]?.start_date,
-                              items?.Contracts[0]?.end_date,
-                            ) ? (
-                              <div
-                                className="ecms-status ecms-status--ok"
-                              >
-                                Valid
-                              </div>
-                            ) : (
-                              <div
-                                className="ecms-status ecms-status--bad"
-                              >
-                                Expired / none
-                              </div>
-                            )}
+                            <PersonCell
+                              name={`${items.first_name} ${items.last_name}`}
+                              email={items.email}
+                            />
                           </td>
                           {!isDashboard ? (
-                            <td>
-                              <button
+                            <td className="ecms-muted text-capitalize">
+                              {items.role}
+                            </td>
+                          ) : null}
+                          <td>
+                            {latest ? (
+                              <DateCell value={latest.end_date} />
+                            ) : (
+                              <span className="ecms-muted">–</span>
+                            )}
+                          </td>
+                          <td>
+                            <span className={"ecms-status ecms-status--" + kind}>
+                              {label}
+                            </span>
+                          </td>
+                          {!isDashboard ? (
+                            <td className="ecms-actions">
+                              <IconButton
+                                label={`View ${items.first_name} ${items.last_name}'s contracts`}
                                 onClick={() => {
                                   setMode("view");
                                   setCurrent(items);
                                 }}
-                                className="btn btn-sm"
-                                style={{ margin: "0px", padding: "5px" }}
                               >
-                                <BsEye size={20} /> View
-                              </button>
+                                <FiEye />
+                              </IconButton>
                             </td>
                           ) : null}
                         </tr>
@@ -321,7 +318,8 @@ function Contracts({ isDashboard }) {
               </CardBody>
             </Card>
             <RPagination
-              pagination={pagination}
+              pagination={{ ...pagination, count: rows.length }}
+              perPage={perPage}
               setPagination={setPagination}
             />
           </>
