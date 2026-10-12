@@ -26,7 +26,7 @@ ECMS is role-based. Everyone signs in to the same system and sees only what they
 - **Deactivate / reactivate** accounts: records are kept, the person can't sign in and is left off new rotas
 - **Contracts**: valid, expired and "no contract" at a glance, with end dates and a per-person history
 - **Automatic weekly rota** from every active caregiver: shares differ by at most one shift, nobody works the same day twice, and caregivers per day is adjustable
-- **Invoices**: due dates, paid / unpaid / overdue status, one-click "mark as paid", editable, in the care home's currency
+- **Invoices**: due dates, paid / unpaid / overdue status, one-click "mark as paid", editable, in the care home's currency, and **downloadable as PDF** by admins and by the person billed
 - **Passwords**: everyone can change their own; admins can set a temporary one
 - **Search, sortable columns and paging** across the whole list, not just the visible page
 - **Responsive**: on phones, tables turn into readable cards
@@ -146,6 +146,7 @@ npm test    # starts the real API against a throwaway MongoDB; no setup needed
 | `REACT_APP_DEMO` | `true` shows the "Try as …" buttons (needs `DEMO_MODE=true` on the API) |
 | `REACT_APP_CURRENCY` | Currency for invoices, as an ISO code (`GBP`, `NGN`, `USD`…). Each deployment serves one care home, so it's set per deployment. Default `GBP`. |
 | `REACT_APP_LOCALE` | Number and date formatting, e.g. `en-GB`, `en-NG`. Default `en-GB`. |
+| `REACT_APP_ORG_NAME` / `REACT_APP_ORG_LINE` | Care home name and tagline at the top of invoice PDFs. Default `ECMS` / `Elderly Care Management`. |
 
 > Real secrets are never committed. Only `.env.example` templates are tracked, and `.env` is gitignored.
 

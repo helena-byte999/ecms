@@ -12,7 +12,8 @@ import {
   InvoiceStatus,
   formatDate,
 } from "components/ui/ListUI.js";
-import { FiCheckCircle, FiEye, FiRotateCcw } from "react-icons/fi";
+import { FiCheckCircle, FiDownload, FiEye, FiRotateCcw } from "react-icons/fi";
+import { downloadInvoicePdf } from "components/ui/invoicePdf.js";
 import Brand from "components/Brand.js";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
@@ -178,6 +179,20 @@ function Invoices() {
     saveInvoice({ _id, amount, type, description, due_date, status }, "Invoice saved.");
   }
 
+  // Look up who it's billed to (name, address), then build the PDF
+  async function download(inv) {
+    let person = {};
+    try {
+      person = (await axios.get(user.showUserByEmail + "/" + inv.email)).data.data || {};
+    } catch (e) {}
+    try {
+      await downloadInvoicePdf(inv, person);
+    } catch (e) {
+      setNotificationDetails({ msg: "Couldn't create the PDF.", type: "danger" });
+      setNotificationStatus(true);
+    }
+  }
+
   function togglePaid(inv) {
     const status = inv.status === "paid" ? "unpaid" : "paid";
     saveInvoice({ _id: inv._id, status }, status === "paid" ? "Marked as paid." : "Marked as unpaid.");
@@ -270,6 +285,9 @@ function Invoices() {
                             onClick={() => togglePaid(items)}
                           >
                             {items.status === "paid" ? <FiRotateCcw /> : <FiCheckCircle />}
+                          </IconButton>
+                          <IconButton label="Download PDF" onClick={() => download(items)}>
+                            <FiDownload />
                           </IconButton>
                         </td>
                       </tr>
@@ -546,6 +564,9 @@ function Invoices() {
                   </Row>
                   <Button color="primary" type="submit">
                     Save changes
+                  </Button>{" "}
+                  <Button type="button" onClick={() => download(current)}>
+                    <FiDownload aria-hidden="true" /> Download PDF
                   </Button>
                 </Form>
               </CardBody>

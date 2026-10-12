@@ -13,7 +13,8 @@ import {
   InvoiceStatus,
   formatDate,
 } from "components/ui/ListUI.js";
-import { FiEye } from "react-icons/fi";
+import { FiDownload, FiEye } from "react-icons/fi";
+import { downloadInvoicePdf } from "components/ui/invoicePdf.js";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
 import { useAuth } from "contexts/AuthContext";
@@ -148,6 +149,12 @@ function Invoices() {
                             }}
                           >
                             <FiEye />
+                          </IconButton>
+                          <IconButton
+                            label="Download PDF"
+                            onClick={() => downloadInvoicePdf(items, userDetail)}
+                          >
+                            <FiDownload />
                           </IconButton>
                         </td>
                       </tr>

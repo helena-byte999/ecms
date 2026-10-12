@@ -72,13 +72,15 @@ export function formatDate(value) {
 const CURRENCY = process.env.REACT_APP_CURRENCY || "GBP";
 const LOCALE = process.env.REACT_APP_LOCALE || "en-GB";
 
-export function formatMoney(value) {
+// display: "symbol" (£1,200.00) or "code" (GBP 1,200.00)
+export function formatMoney(value, display = "symbol") {
   const amount = Number(value);
   if (value === "" || value == null || isNaN(amount)) return "–";
   try {
     return new Intl.NumberFormat(LOCALE, {
       style: "currency",
       currency: CURRENCY,
+      currencyDisplay: display,
     }).format(amount);
   } catch (e) {
     // unknown currency code: fall back to a plain number
