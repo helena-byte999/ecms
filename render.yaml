@@ -5,6 +5,8 @@ services:
     name: ecms-api
     runtime: node
     plan: free
+    # keep this in the same region as the MongoDB Atlas cluster (AWS eu-central-1)
+    region: frankfurt
     rootDir: server
     buildCommand: npm ci --omit=dev
     startCommand: node index.js
