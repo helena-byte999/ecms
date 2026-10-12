@@ -4,7 +4,7 @@
 
 A full-stack web application that gives a care home one place to manage its clients, caregivers, contracts, weekly rotas and invoices, with a separate dashboard for administrators, caregivers and clients.
 
-**Live demo:** _link coming soon_ · try it as an administrator, caregiver or client, no sign-up needed ([details](#try-the-demo))
+**Live demo: [ecms-omega.vercel.app](https://ecms-omega.vercel.app)** · try it as an administrator, caregiver or client, no sign-up needed ([details](#try-the-demo))
 **Stack:** React · Sass · Node.js · Express · MongoDB
 
 > This started as an undergraduate team project. This repository is my copy, rebuilt and documented for my portfolio. See [Team & my role](#team--my-role) and the [requirements & design](docs/requirements.md) I wrote.
