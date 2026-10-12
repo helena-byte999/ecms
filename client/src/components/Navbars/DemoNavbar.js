@@ -1,11 +1,9 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { FaUserCircle } from "react-icons/fa";
-import { AiFillCloseCircle } from "react-icons/ai";
+import { FiLogOut } from "react-icons/fi";
 import Modal from "react-modal";
 
-import logo from "../../assets/img/logo.png";
 import {
   Collapse,
   Navbar,
@@ -14,8 +12,6 @@ import {
   Nav,
   NavItem,
   Container,
-  Col,
-  Row,
   Button,
 } from "reactstrap";
 
@@ -37,6 +33,9 @@ function Header({ props, routes }) {
   const sidebarToggle = React.useRef();
   const location = useLocation();
   const { userDetail } = useAuth();
+  const initials =
+    ((userDetail.first_name || "")[0] || "") +
+      ((userDetail.last_name || "")[0] || "") || "?";
   const toggle = () => {
     if (isOpen) {
       setColor("transparent");
@@ -121,17 +120,6 @@ function Header({ props, routes }) {
             </button>
           </div>
 
-          <div className="logo">
-            <button className="simple-text logo-mini">
-              <div className="logo-img">
-                <img
-                  src={logo}
-                  style={{ width: "40px", marginRight: "10px" }}
-                  alt="react-logo"
-                />
-              </div>
-            </button>
-          </div>
         </div>
         <NavbarBrand href="/">{getBrand()}</NavbarBrand>
         <NavbarToggler onClick={toggle}>
@@ -140,33 +128,32 @@ function Header({ props, routes }) {
           <span className="navbar-toggler-bar navbar-kebab" />
         </NavbarToggler>
         <Collapse isOpen={isOpen} navbar className="justify-content-end">
-          <Nav navbar>
+          <Nav navbar className="ecms-navactions">
             <NavItem>
-              <Row>
-                <Col style={{ margin: "10px" }}>
-                  <Link to="user-page">
-                    <FaUserCircle size={25} />
-                  </Link>
-                </Col>
-                <Col style={{ marginLeft: "0px" }}>
-                  {" "}
-                  <span
-                    className="nav-link btn-rotate"
-                    style={{ cursor: "pointer", fontSize: "13px" }}
-                  >
-                    {userDetail.first_name || ""}
-                  </span>
-                </Col>
-              </Row>
+              <Link
+                to={`/${userDetail.role}/user-page`}
+                className="ecms-userchip"
+                title="Your profile"
+              >
+                <span className="ecms-avatar">{initials}</span>
+                <span className="ecms-userchip__text">
+                  <strong>
+                    {[userDetail.first_name, userDetail.last_name]
+                      .filter(Boolean)
+                      .join(" ")}
+                  </strong>
+                  <small>{userDetail.role}</small>
+                </span>
+              </Link>
             </NavItem>
             <NavItem>
-              <span
-                style={{ cursor: "pointer" }}
-                className="nav-link btn-rotate"
+              <button
+                type="button"
+                className="ecms-btn-ghost"
                 onClick={() => setIsModalOpen(true)}
               >
-                Logout
-              </span>
+                <FiLogOut aria-hidden="true" /> Sign out
+              </button>
             </NavItem>
           </Nav>
         </Collapse>
@@ -175,29 +162,19 @@ function Header({ props, routes }) {
         isOpen={modalIsOpen}
         onRequestClose={() => setIsModalOpen(false)}
         style={customStyles}
-        contentLabel="Logout Modal"
+        contentLabel="Sign out"
       >
-        <button onClick={() => setIsModalOpen(false)}>
-          Close <AiFillCloseCircle color="red" />
-        </button>
-        <div style={{ padding: "20px" }}>
-          <Button
-            className="btn-round"
-            color="primary"
-            type="submit"
-            onClick={() => setIsModalOpen(false)}
-          >
-            Stay Signed In
-          </Button>
-          <Button
-            onClick={() => logout()}
-            style={{ marginLeft: "15px" }}
-            className="btn-round"
-            color="danger"
-            type="submit"
-          >
-            Logout
-          </Button>
+        <div className="ecms-dialog">
+          <h4>Sign out of ECMS?</h4>
+          <p>You'll need your email and password to sign back in.</p>
+          <div className="ecms-dialog__actions">
+            <Button type="button" onClick={() => setIsModalOpen(false)}>
+              Stay signed in
+            </Button>
+            <Button color="primary" type="button" onClick={() => logout()}>
+              Sign out
+            </Button>
+          </div>
         </div>
       </Modal>
     </Navbar>

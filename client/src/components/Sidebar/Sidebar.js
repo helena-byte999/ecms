@@ -1,6 +1,7 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { Nav } from "reactstrap";
+import Brand from "components/Brand.js";
 // javascript plugin used to create scrollbars on windows
 import PerfectScrollbar from "perfect-scrollbar";
 
@@ -31,19 +32,10 @@ function Sidebar(props) {
       data-color={props.bgColor}
       data-active-color={props.activeColor}
     >
-      <div className="logo" style={{ textAlign: "center" }}>
-        {/* <a
-          href="#"
-          className="simple-text logo-mini"
-        >
-          <div className="logo-img">
-            <img src={logo} alt="react-logo" />
-          </div>
-        </a> */}
-        {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-        <a href="/" className="simple-text logo-normal">
-          CMS Elderly Home
-        </a>
+      <div className="logo">
+        <Link to="/" aria-label="ECMS home">
+          <Brand light />
+        </Link>
       </div>
       <div className="sidebar-wrapper" ref={sidebar}>
         <Nav>
@@ -62,12 +54,13 @@ function Sidebar(props) {
                 >
                   {prop.icon_comp ? (
                     <>
-                      {prop.icon_comp}{" "}
-                      <span style={{ paddingLeft: "15px" }}> {prop.name}</span>
+                      {prop.icon_comp}
+                      <span>{prop.name}</span>
                     </>
                   ) : (
                     <>
-                      <i className={prop.icon} /> <p>{prop.name}</p>
+                      <i className={prop.icon} />
+                      <p>{prop.name}</p>
                     </>
                   )}
                 </NavLink>

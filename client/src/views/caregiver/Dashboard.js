@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Notifications from "components/Notification/Notification";
 import { MdOutlineEvent } from "react-icons/md";
-import { FaFileContract, FaUserCircle } from "react-icons/fa";
+import { FaFileContract, FaFileInvoice } from "react-icons/fa";
 import axios from "axios";
 import { user } from "data/api";
 import { useAuth } from "contexts/AuthContext";
@@ -53,7 +53,7 @@ function Dashboard() {
                 <Row>
                   <Col md="9" style={{ fontSize: "20px" }}>
                     <p className="card-category">Contracts</p>
-                    <CardTitle tag="p"> Total: {counts.contracts}</CardTitle>
+                    <CardTitle tag="p">{counts.contracts ?? "–"}</CardTitle>
                     <p />
                   </Col>
                   <Col md="3">
@@ -71,12 +71,12 @@ function Dashboard() {
                 <Row>
                   <Col md="9" style={{ fontSize: "20px" }}>
                     <p className="card-category">Invoices</p>
-                    <CardTitle tag="p">Total: {counts.invoices}</CardTitle>
+                    <CardTitle tag="p">{counts.invoices ?? "–"}</CardTitle>
                     <p />
                   </Col>
                   <Col md="3">
                     <div className="icon-big text-center icon-warning">
-                      <FaUserCircle />
+                      <FaFileInvoice />
                     </div>
                   </Col>
                 </Row>
@@ -88,8 +88,15 @@ function Dashboard() {
               <CardBody>
                 <Row>
                   <Col md="9" style={{ fontSize: "20px" }}>
-                    <p className="card-category">Upcoming Events</p>
-                    <CardTitle tag="p"> :</CardTitle>
+                    <p className="card-category">Member since</p>
+                    <CardTitle tag="p">
+                      {userDetail.date_created
+                        ? new Date(userDetail.date_created).toLocaleDateString(
+                            "en-GB",
+                            { month: "short", year: "numeric" },
+                          )
+                        : "–"}
+                    </CardTitle>
                     <p />
                   </Col>
                   <Col md="3">

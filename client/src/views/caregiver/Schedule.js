@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { schedule } from "data/api";
 import Notifications from "components/Notification/Notification";
+import { useAuth } from "contexts/AuthContext";
 
 // reactstrap components
 import { Card, CardBody, Table, Row, Col } from "reactstrap";
 
 function Schedules() {
+  const { userDetail } = useAuth();
   const [notificationStatus, setNotificationStatus] = useState(false);
   const [notificationDetails, setNotificationDetails] = useState({
     msg: "",
@@ -103,15 +105,19 @@ function Schedules() {
                       {Object.values(current.schedule).map((items, key) => {
                         return (
                           <tr key={key}>
+                            <td className="ecms-rota-day">{days[key]}</td>
                             <td>
-                              {key + 1} - {days[key]}
-                            </td>
-                            <td>
-                              <>
-                                {items.map((stf, index) => {
-                                  return <span key={index}>{stf.name},</span>;
-                                })}
-                              </>
+                              <div className="ecms-chips">
+                                {items.map((stf, index) => (
+                                  <span
+                                    key={index}
+                                    className={"ecms-chip" + (stf.email === userDetail.email ? " ecms-chip--me" : "")}
+                                    title={stf.email}
+                                  >
+                                    {stf.name}
+                                  </span>
+                                ))}
+                              </div>
                             </td>
                           </tr>
                         );

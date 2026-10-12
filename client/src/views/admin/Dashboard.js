@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Notifications from "components/Notification/Notification";
-import { MdOutlineEvent } from "react-icons/md";
-import { FaFileContract, FaUserCircle } from "react-icons/fa";
+import { FaFileContract, FaUserCircle, FaUsers } from "react-icons/fa";
 import axios from "axios";
 import { user } from "data/api";
 import Schedules from "../caregiver/Schedule";
@@ -50,7 +49,7 @@ function Dashboard() {
                 <Row>
                   <Col md="9" style={{ fontSize: "20px" }}>
                     <p className="card-category">Contracts</p>
-                    <CardTitle tag="p"> Total: {counts.contracts}</CardTitle>
+                    <CardTitle tag="p">{counts.contracts ?? "–"}</CardTitle>
                     <p />
                   </Col>
                   <Col md="3">
@@ -68,7 +67,7 @@ function Dashboard() {
                 <Row>
                   <Col md="9" style={{ fontSize: "20px" }}>
                     <p className="card-category">Clients</p>
-                    <CardTitle tag="p">Total: {counts.clients}</CardTitle>
+                    <CardTitle tag="p">{counts.clients ?? "–"}</CardTitle>
                     <p />
                   </Col>
                   <Col md="3">
@@ -85,13 +84,13 @@ function Dashboard() {
               <CardBody>
                 <Row>
                   <Col md="9" style={{ fontSize: "20px" }}>
-                    <p className="card-category">Upcoming Events</p>
-                    <CardTitle tag="p"> :</CardTitle>
+                    <p className="card-category">All users</p>
+                    <CardTitle tag="p">{counts.users ?? "–"}</CardTitle>
                     <p />
                   </Col>
                   <Col md="3">
                     <div className="icon-big text-center icon-warning">
-                      <MdOutlineEvent />
+                      <FaUsers />
                     </div>
                   </Col>
                 </Row>

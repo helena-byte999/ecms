@@ -4,7 +4,7 @@
 
 $font-color: #66615b !default;
 $fill-font-color: rgba(255, 255, 255, 0.8);
-$font-family-sans-serif: "Montserrat", "Helvetica", Arial, sans-serif;
+$font-family-sans-serif: "Figtree", "Helvetica", Arial, sans-serif;
 $sans-serif-family: "Montserrat", "Helvetica Neue", Arial, sans-serif;
 
 $none: 0 !default;
@@ -63,21 +63,21 @@ $default-states-color: #403d39 !default;
 $smoke-bg: #f5f5f5 !default;
 $pale-bg: #fffcf5 !default;
 $medium-pale-bg: #f1eae0 !default;
-$default-body-bg: #f4f3ef !default;
+$default-body-bg: #f4f7f9 !default;
 
-$primary-color: #25a05c !default;
+$primary-color: #0f8f8a !default;
 $primary-states-color: darken($primary-color, 10%) !default;
 
-$success-color: #6bd098 !default;
+$success-color: #1c9a6c !default;
 $success-states-color: darken($success-color, 10%) !default;
 
-$info-color: #272424 !default;
+$info-color: #1d2b3f !default;
 $info-states-color: darken($info-color, 10%) !default;
 
-$warning-color: #fbc658 !default;
+$warning-color: #f2b44c !default;
 $warning-states-color: darken($warning-color, 10%) !default;
 
-$danger-color: #ef8157 !default;
+$danger-color: #d2554a !default;
 $danger-states-color: darken($danger-color, 8%) !default;
 
 $link-disabled-color: #666666 !default;
@@ -125,7 +125,7 @@ $brand-danger: $danger-color !default;
 $brand-inverse: $black-color !default;
 
 $link-disabled-color: #666666 !default;
-$dark-color: #25a05c !default;
+$dark-color: #1d2b3f !default;
 
 //     light colors
 $light-blue: rgba($primary-color, 0.2);

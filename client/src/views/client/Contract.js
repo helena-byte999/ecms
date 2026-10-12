@@ -110,12 +110,8 @@ function Contracts() {
                                   items.end_date,
                                 ) ? (
                                   <div
-                                    style={{
-                                      background: "rgb(46, 212, 122)",
-                                      color: "white",
-                                      borderRadius: "10px",
-                                      cursor: "not-allowed",
-                                    }}
+                                    className="ecms-status ecms-status--ok"
+                                    style={{ cursor: "not-allowed" }}
                                   >
                                     Valid
                                   </div>
@@ -123,12 +119,8 @@ function Contracts() {
                                   <>
                                     {key === 0 ? (
                                       <div
-                                        style={{
-                                          background: "orange",
-                                          color: "white",
-                                          borderRadius: "10px",
-                                          cursor: "pointer",
-                                        }}
+                                        className="ecms-status ecms-status--warn"
+                                        style={{ cursor: "pointer" }}
                                         onClick={() => {
                                           setCurrent({
                                             ...current,
@@ -141,12 +133,8 @@ function Contracts() {
                                       </div>
                                     ) : (
                                       <div
-                                        style={{
-                                          background: "crimson",
-                                          color: "white",
-                                          borderRadius: "10px",
-                                          cursor: "not-allowed",
-                                        }}
+                                        className="ecms-status ecms-status--bad"
+                                        style={{ cursor: "not-allowed" }}
                                       >
                                         Expired
                                       </div>

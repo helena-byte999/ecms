@@ -168,7 +168,7 @@ function Schedules() {
                     setMode("add");
                     setCurrent({});
                   }}
-                  className="btn"
+                  className="btn btn-primary"
                   style={{
                     width: "100%",
                     marginTop: "20px",
@@ -204,7 +204,7 @@ function Schedules() {
                                 setMode("view");
                                 setCurrent(items);
                               }}
-                              className="btn"
+                              className="btn btn-sm"
                               style={{ margin: "0px", padding: "5px" }}
                             >
                               <BsEye size={20} /> View
@@ -322,19 +322,19 @@ function Schedules() {
                         {Object.values(current.schedule).map((items, key) => {
                           return (
                             <tr key={key}>
+                              <td className="ecms-rota-day">{days[key]}</td>
                               <td>
-                                {key + 1} - {days[key]}
-                              </td>
-                              <td>
-                                <>
-                                  {items.map((stf, index) => {
-                                    return (
-                                      <span key={index}>
-                                        {stf.name},<br />
-                                      </span>
-                                    );
-                                  })}
-                                </>
+                                <div className="ecms-chips">
+                                  {items.map((stf, index) => (
+                                    <span
+                                      key={index}
+                                      className={"ecms-chip"}
+                                      title={stf.email}
+                                    >
+                                      {stf.name}
+                                    </span>
+                                  ))}
+                                </div>
                               </td>
                             </tr>
                           );

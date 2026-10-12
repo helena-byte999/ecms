@@ -1,22 +1,31 @@
 import React, { useState } from "react";
-import "./style.css";
 import Axios from "axios";
-import logo from "../../images/logo.png";
+import { Link, useHistory } from "react-router-dom";
+import {
+  FiAlertCircle,
+  FiArrowLeft,
+  FiArrowRight,
+  FiCalendar,
+  FiCheck,
+  FiFileText,
+} from "react-icons/fi";
+import Brand from "components/Brand.js";
 import { authenticate } from "../../data/api";
-import { useHistory } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import { Row, Col } from "reactstrap";
+import "./login.css";
 
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const history = useHistory();
   const { getLoggedIn } = useAuth();
 
   async function loginFunc(e) {
-    setMessage("");
     e.preventDefault();
+    setMessage("");
+    setSubmitting(true);
     let nemail = email.toLowerCase().replace(/ /g, "");
     const loginData = { email: nemail, password };
 
@@ -24,77 +33,119 @@ function Login() {
       const { data } = await Axios.post(authenticate.userAuth, loginData);
       if (data.auth === true) {
         window.localStorage.setItem("token", data.token);
-        await getLoggedIn();
-        history.push("/admin/dashboard");
-      } else {
-        setMessage(data.msg);
+        const user = await getLoggedIn();
+        history.push(`/${user.role}/dashboard`);
+        return;
       }
+      setMessage(data.msg);
     } catch (err) {
-      setMessage(err.response.data.msg + "!");
+      setMessage(
+        err.response?.data?.msg ||
+          "We couldn't reach the server. Please try again in a moment.",
+      );
     }
+    setSubmitting(false);
   }
 
   return (
-    <Row
-      className="l"
-      style={{ margin: 0, padding: 0, backgroundColor: "#F5F5F5" }}
-    >
-      <Col>
-        <Row style={{ padding: "10px" }}>
-          <Col md={2}>
-            {" "}
-            <img src={logo} style={{ width: "100px" }} alt={"logo"} />
-          </Col>
-          <Col
-            style={{ paddingTop: "27px", fontSize: "25px", fontWeight: "700" }}
-          >
-            <span style={{ color: "#25A05C" }}>CMS</span> Elderly Homes
-          </Col>
-        </Row>
-        <h4 style={{ color: "red", textAlign: "center" }}>{message}</h4>
-        <div className="llogin-container">
-          <p className="ltitle">Welcome back</p>
-          <div>Login to ECMS</div>
-          <div className="lseparator"></div>
-
-          <form className="llogin-form" onSubmit={loginFunc}>
-            <div className="lform-control" style={{}}>
-              <input
-                type="email"
-                placeholder="Email"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <i className="fas fa-user"></i>
-            </div>
-            <div className="lform-control">
-              <input
-                type="password"
-                placeholder="Password"
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <i className="fas fa-lock"></i>
-            </div>
-
-            <button className="lsubmit">Login</button>
-          </form>
+    <div className="ecms-login">
+      <div className="ecms-login__main">
+        <div className="ecms-login__top">
+          <Link to="/" aria-label="ECMS home">
+            <Brand />
+          </Link>
+          <Link to="/" className="ecms-login__back">
+            <FiArrowLeft aria-hidden="true" /> Back to home
+          </Link>
         </div>
-      </Col>
-      <Col
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          flexWrap: "wrap",
-        }}
-        className="side-image"
-      >
-        <h4 style={{ color: "white" }}>
-          {" "}
-          Online Elderly Care Management System
-        </h4>
-        <img src={logo} style={{ width: "150px" }} alt={"logo"} />
-      </Col>
-    </Row>
+
+        <div className="ecms-login__card">
+          <h1>Welcome back</h1>
+          <p className="ecms-login__sub">
+            Sign in to your ECMS account to continue.
+          </p>
+
+          {message && (
+            <div className="ecms-login__error" role="alert">
+              <FiAlertCircle aria-hidden="true" />
+              <span>{message}</span>
+            </div>
+          )}
+
+          <form onSubmit={loginFunc} noValidate>
+            <label htmlFor="login-email">Email address</label>
+            <input
+              id="login-email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <label htmlFor="login-password">Password</label>
+            <input
+              id="login-password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="Your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <button type="submit" disabled={submitting}>
+              {submitting ? "Signing in…" : "Sign in"}
+              {!submitting && <FiArrowRight aria-hidden="true" />}
+            </button>
+          </form>
+
+          <p className="ecms-login__note">
+            Accounts are created by your care administrator. Ask them if you
+            need access.
+          </p>
+        </div>
+      </div>
+
+      <aside className="ecms-login__side" aria-hidden="true">
+        <div className="ecms-login__side-inner">
+          <span className="ecms-login__pill">ECMS for care teams</span>
+          <h2>Contracts, rotas and invoices, all in one place.</h2>
+          <p>
+            Administrators, caregivers and clients each get a dashboard built
+            for what they need to do.
+          </p>
+          <div className="ecms-login__cards">
+            <div>
+              <span className="ecms-login__icon ecms-login__icon--ok">
+                <FiCheck />
+              </span>
+              <span>
+                <strong>Contract valid</strong>
+                <small>Renewal due Feb 2027</small>
+              </span>
+            </div>
+            <div>
+              <span className="ecms-login__icon">
+                <FiCalendar />
+              </span>
+              <span>
+                <strong>Week 42 rota ready</strong>
+                <small>5 caregivers per shift</small>
+              </span>
+            </div>
+            <div>
+              <span className="ecms-login__icon ecms-login__icon--amber">
+                <FiFileText />
+              </span>
+              <span>
+                <strong>3 new invoices</strong>
+                <small>October care packages</small>
+              </span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
   );
 }
 

@@ -193,7 +193,7 @@ function Invoices() {
                     setMode("add");
                     setCurrent({});
                   }}
-                  className="btn"
+                  className="btn btn-primary"
                   style={{
                     width: "100%",
                     marginTop: "20px",
@@ -233,7 +233,7 @@ function Invoices() {
                                 setMode("view");
                                 setCurrent(items);
                               }}
-                              className="btn"
+                              className="btn btn-sm"
                               style={{ margin: "0px", padding: "5px" }}
                             >
                               <BsEye size={20} /> View

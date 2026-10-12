@@ -25,10 +25,10 @@ function AuthContextProvider(props) {
       setUserDetail({});
       <Redirect to="/login" />;
     } else {
-      Axios.get(authenticate.getUserData).then((user) => {
-        setLoggedIn(loggedInRes.data);
-        setUserDetail(user.data);
-      });
+      const user = await Axios.get(authenticate.getUserData);
+      setLoggedIn(loggedInRes.data);
+      setUserDetail(user.data);
+      return user.data;
     }
   }
   useEffect(() => {

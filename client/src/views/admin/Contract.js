@@ -214,7 +214,7 @@ function Contracts({ isDashboard }) {
                       setMode("add");
                       setCurrent({});
                     }}
-                    className="btn"
+                    className="btn btn-primary"
                     style={{
                       width: "100%",
                       marginTop: "20px",
@@ -231,61 +231,34 @@ function Contracts({ isDashboard }) {
               </Row>
             ) : null}
             <Card>
-              <Row>
-                <Col>
+              <div
+                className="ecms-tabs"
+                role="tablist"
+                aria-label="Filter contracts"
+              >
+                {[
+                  ["all", "All"],
+                  ["no", "No contract"],
+                  ["valid", "Valid"],
+                  ["expired", "Expired"],
+                ].map(([key, label]) => (
                   <button
-                    disabled={selection === "all" ? true : false}
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={selection === key}
+                    className={
+                      "ecms-tab" + (selection === key ? " is-active" : "")
+                    }
                     onClick={() => {
-                      changeCts("all");
-                      setSelection("all");
+                      changeCts(key);
+                      setSelection(key);
                     }}
-                    className="btn"
-                    style={{ margin: "0px", padding: "5px", width: "100%" }}
                   >
-                    <BsEye size={20} /> All Contracts
+                    {label}
                   </button>
-                </Col>
-                <Col>
-                  <button
-                    disabled={selection === "no" ? true : false}
-                    onClick={() => {
-                      changeCts("no");
-                      setSelection("no");
-                    }}
-                    className="btn"
-                    style={{ margin: "0px", padding: "5px", width: "100%" }}
-                  >
-                    <BsEye size={20} /> Users With No Contracts
-                  </button>
-                </Col>
-                <Col>
-                  <button
-                    disabled={selection === "valid" ? true : false}
-                    onClick={() => {
-                      changeCts("valid");
-                      setSelection("valid");
-                    }}
-                    className="btn"
-                    style={{ margin: "0px", padding: "5px", width: "100%" }}
-                  >
-                    <BsEye size={20} /> Users With Valid Contracts
-                  </button>
-                </Col>
-                <Col>
-                  <button
-                    disabled={selection === "expired" ? true : false}
-                    onClick={() => {
-                      changeCts("expired");
-                      setSelection("expired");
-                    }}
-                    className="btn"
-                    style={{ margin: "0px", padding: "5px", width: "100%" }}
-                  >
-                    <BsEye size={20} /> User With Expired Contracts
-                  </button>
-                </Col>
-              </Row>
-              <br />
+                ))}
+              </div>
 
               <CardBody>
                 <Table responsive>
@@ -314,25 +287,15 @@ function Contracts({ isDashboard }) {
                               items?.Contracts[0]?.end_date,
                             ) ? (
                               <div
-                                style={{
-                                  background: "rgb(46, 212, 122)",
-                                  color: "white",
-                                  borderRadius: "10px",
-                                  textAlign: "center",
-                                }}
+                                className="ecms-status ecms-status--ok"
                               >
                                 Valid
                               </div>
                             ) : (
                               <div
-                                style={{
-                                  background: "red",
-                                  color: "white",
-                                  borderRadius: "10px",
-                                  textAlign: "center",
-                                }}
+                                className="ecms-status ecms-status--bad"
                               >
-                                Expire/None
+                                Expired / none
                               </div>
                             )}
                           </td>
@@ -343,7 +306,7 @@ function Contracts({ isDashboard }) {
                                   setMode("view");
                                   setCurrent(items);
                                 }}
-                                className="btn"
+                                className="btn btn-sm"
                                 style={{ margin: "0px", padding: "5px" }}
                               >
                                 <BsEye size={20} /> View
@@ -554,23 +517,15 @@ function Contracts({ isDashboard }) {
                                   items.end_date,
                                 ) ? (
                                   <div
-                                    style={{
-                                      background: "rgb(46, 212, 122)",
-                                      color: "white",
-                                      borderRadius: "10px",
-                                      cursor: "not-allowed",
-                                    }}
+                                    className="ecms-status ecms-status--ok"
+                                    style={{ cursor: "not-allowed" }}
                                   >
                                     Valid
                                   </div>
                                 ) : (
                                   <div
-                                    style={{
-                                      background: "crimson",
-                                      color: "white",
-                                      borderRadius: "10px",
-                                      cursor: "not-allowed",
-                                    }}
+                                    className="ecms-status ecms-status--bad"
+                                    style={{ cursor: "not-allowed" }}
                                   >
                                     Expired
                                   </div>

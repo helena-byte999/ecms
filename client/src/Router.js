@@ -5,50 +5,36 @@ import { useAuth } from "./contexts/AuthContext";
 import AdminLayout from "layouts/Admin.js";
 import ClientLayout from "layouts/Client";
 import CaregiverLayout from "layouts/Caregiver";
-import Homepage from "demos/Homepage.js";
+import Home from "views/home/Home.js";
 import LoginPage from "./views/auth/Login";
+
+const roleLayouts = {
+  admin: AdminLayout,
+  client: ClientLayout,
+  caregiver: CaregiverLayout,
+};
 
 function RouterComp() {
   const { loggedIn, userDetail } = useAuth();
-
-  // Helper function to render role-specific route
-  const renderRoleRoute = (role, Layout, defaultPath) => {
-    if (userDetail.role === role) {
-      return (
-        <>
-          <Route path={`/${role}`} render={(props) => <Layout {...props} />} />
-          <Redirect to={defaultPath} />
-        </>
-      );
-    }
-    return null;
-  };
+  // only the logged-in user's own area is routable
+  const role = loggedIn ? userDetail.role : undefined;
+  const Layout = roleLayouts[role];
 
   return (
     <BrowserRouter>
       <Switch>
         {/* Public routes */}
-        <Route exact path="/" component={Homepage} />
+        <Route exact path="/" component={Home} />
         <Route path="/login" component={LoginPage} />
 
-        {/* Protected routes */}
-        {loggedIn ? (
-          <>
-            {renderRoleRoute("admin", AdminLayout, "/admin/dashboard")}
-            {renderRoleRoute("client", ClientLayout, "/client/dashboard")}
-            {renderRoleRoute(
-              "caregiver",
-              CaregiverLayout,
-              "/caregiver/dashboard",
-            )}
-          </>
-        ) : (
-          // If not logged in, redirect to homepage
-          <Redirect to="/" />
+        {/* Protected routes: deep links like /admin/invoice load directly */}
+        {Layout && (
+          <Redirect exact from={`/${role}`} to={`/${role}/dashboard`} />
         )}
+        {Layout && <Route path={`/${role}`} component={Layout} />}
 
-        {/* Fallback route */}
-        <Redirect to="/" />
+        {/* Fallback: your own dashboard if logged in, otherwise the homepage */}
+        <Redirect to={Layout ? `/${role}/dashboard` : "/"} />
       </Switch>
     </BrowserRouter>
   );

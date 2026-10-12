@@ -28,6 +28,20 @@ Authentication is handled with JSON Web Tokens and hashed passwords, and all car
 - Detailed user profiles: personal details, medical info, next of kin, and emergency contacts
 - Responsive UI built with React, Tailwind CSS, and Sass
 
+## Screenshots
+
+| Homepage | Sign in |
+|----------|---------|
+| ![ECMS homepage](docs/screenshots/home.png) | ![Sign-in page](docs/screenshots/login.png) |
+
+| Admin dashboard | Caregiver dashboard (own shifts highlighted) |
+|-----------------|----------------------------------------------|
+| ![Admin dashboard with contracts and weekly rota](docs/screenshots/admin-dashboard.png) | ![Caregiver dashboard with weekly rota](docs/screenshots/caregiver-dashboard.png) |
+
+<img src="docs/screenshots/mobile-home.png" alt="ECMS homepage on a phone" width="260">
+
+_Screenshots use made-up demo data._
+
 ## Tech stack
 
 | Layer | Technology |

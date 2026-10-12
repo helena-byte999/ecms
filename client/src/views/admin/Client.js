@@ -138,18 +138,10 @@ function Clients() {
         }
       });
   }
-  function getColor(status) {
-    let temp = "orange";
-    if (status === "active") {
-      temp = "#2ED47A";
-    }
-    if (status === "in-active") {
-      temp = "red";
-    }
-    if (status === "on-leave") {
-      temp = "orange";
-    }
-    return temp;
+  function statusKind(status) {
+    if (status === "active") return "ok";
+    if (status === "in-active") return "bad";
+    return "warn";
   }
   return (
     <>
@@ -184,7 +176,7 @@ function Clients() {
                     setMode("add");
                     setCurrent({});
                   }}
-                  className="btn"
+                  className="btn btn-primary"
                   style={{
                     width: "100%",
                     marginTop: "20px",
@@ -214,16 +206,13 @@ function Clients() {
                           <td>{items.first_name + " " + items.last_name}</td>
                           <td>{items.email}</td>
                           <td>
-                            <div
-                              style={{
-                                backgroundColor: getColor(items.status),
-                                textAlign: "center",
-                                borderRadius: "15px",
-                                padding: "3px",
-                              }}
+                            <span
+                              className={
+                                "ecms-status ecms-status--" + statusKind(items.status)
+                              }
                             >
                               {items.status}
-                            </div>
+                            </span>
                           </td>
                           <td>
                             <button
@@ -231,7 +220,7 @@ function Clients() {
                                 setMode("view");
                                 setCurrent(items);
                               }}
-                              className="btn"
+                              className="btn btn-sm"
                               style={{ margin: "0px", padding: "5px" }}
                             >
                               <BsEye size={20} /> View
