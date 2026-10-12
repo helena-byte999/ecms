@@ -95,6 +95,25 @@ async function waitFor(server, text, ms = 15000) {
 	const tomas = await call('GET', '/api/user/show_user_by_email/tomas.rivera@example.com', { token: admin2.token });
 	check("visitors' changes are wiped by the reset", visitor.status === 400 && tomas.data?.data?.status === 'active');
 
+	// A deploy with newer sample data re-seeds even if tonight's reset hasn't happened
+	await call('POST', '/api/user/add_user', { token: admin2.token, body: { email: 'visitor2@example.com', first_name: 'Visitor', last_name: 'Two', dob: '1950-01-01', role: 'client', address: 'x', phone: 'x', password: 'x' } });
+	server.kill();
+	await new Promise(r => setTimeout(r, 500));
+	await mongoose.connect(uri);
+	await mongoose.connection.db.collection('metas').updateOne({ key: 'demo_seed_version' }, { $set: { value: 1 } });
+	await mongoose.disconnect();
+	server = startServer(uri);
+	check('newer sample data re-seeds on the next start', await waitFor(server, 'Demo data reset'));
+	const admin3 = await login('admin');
+	check('...and replaces visitors\' changes', (await call('GET', '/api/user/show_user_by_email/visitor2@example.com', { token: admin3.token })).status === 400);
+	server.log = '';
+	server.kill();
+	await new Promise(r => setTimeout(r, 500));
+	server = startServer(uri);
+	await waitFor(server, 'Server started');
+	await new Promise(r => setTimeout(r, 1500));
+	check('a normal restart does not re-seed', !server.log.includes('Demo data reset'));
+
 	server.kill();
 	await mongo.stop();
 	if (failures) console.log('--- server log ---\n' + server.log);

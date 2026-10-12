@@ -19,6 +19,8 @@ const ACCOUNTS = {
 const isDemoAccount = (user) => !!user && Object.values(ACCOUNTS).includes(user.email);
 
 const RESET_HOUR_UTC = 3;
+// Bump when the sample data changes, so the next deploy re-seeds straight away
+const SEED_VERSION = 2;
 const DAY = 86400000;
 
 const caregivers = [
@@ -134,6 +136,7 @@ async function resetDemoData() {
 	}
 
 	await Meta.findOneAndUpdate({ key: 'demo_last_reset' }, { value: new Date(now) }, { upsert: true });
+	await Meta.findOneAndUpdate({ key: 'demo_seed_version' }, { value: SEED_VERSION }, { upsert: true });
 	console.log(`Demo data reset: ${created.length} people, ${invoices.length} invoices, 2 rotas`);
 }
 
@@ -147,7 +150,9 @@ function lastBoundary(now = new Date()) {
 async function resetIfDue() {
 	try {
 		const meta = await Meta.findOne({ key: 'demo_last_reset' });
-		if (!meta || new Date(meta.value) < lastBoundary()) await resetDemoData();
+		const version = await Meta.findOne({ key: 'demo_seed_version' });
+		const stale = !meta || new Date(meta.value) < lastBoundary();
+		if (stale || version?.value !== SEED_VERSION) await resetDemoData();
 	} catch (err) {
 		console.error('Demo reset failed', err);
 	}
