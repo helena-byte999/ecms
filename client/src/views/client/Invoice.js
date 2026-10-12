@@ -9,6 +9,7 @@ import {
   DateCell,
   IconButton,
   formatMoney,
+  SortHeader,
 } from "components/ui/ListUI.js";
 import { FiEye } from "react-icons/fi";
 import Notifications from "components/Notification/Notification";
@@ -35,6 +36,7 @@ function Invoices() {
   const [current, setCurrent] = useState({ email: "" });
   const [pagination, setPagination] = useState({ current: 1 });
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({});
   const { userDetail } = useAuth();
 
   useEffect(
@@ -42,7 +44,12 @@ function Invoices() {
       async function fetchInvoices() {
         await axios
           .get(invoice_api.showInvoice + "/" + userDetail.email, {
-            params: { ...pagination, search },
+            params: {
+              current: pagination.current,
+              search,
+              sort: sort.field,
+              order: sort.order,
+            },
           })
           .then((response) => {
             if (response.data.status === true) {
@@ -60,9 +67,14 @@ function Invoices() {
       fetchInvoices();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, pagination.current],
+    [search, pagination.current, sort],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
+
+  function sortBy(next) {
+    setSort(next);
+    setPagination((p) => ({ ...p, current: 1 }));
+  }
 
   return (
     <>
@@ -86,9 +98,15 @@ function Invoices() {
                 <Table responsive>
                   <thead>
                     <tr>
-                      <th>Description</th>
-                      <th>Date</th>
-                      <th>Amount</th>
+                      <SortHeader field="description" sort={sort} onSort={sortBy}>
+                        Description
+                      </SortHeader>
+                      <SortHeader field="date" sort={sort} onSort={sortBy}>
+                        Date
+                      </SortHeader>
+                      <SortHeader field="amount" sort={sort} onSort={sortBy}>
+                        Amount
+                      </SortHeader>
                       <th className="ecms-actions">Actions</th>
                     </tr>
                   </thead>
@@ -107,10 +125,12 @@ function Invoices() {
                             {items.description || items.type || "Invoice"}
                           </strong>
                         </td>
-                        <td>
+                        <td data-label="Date">
                           <DateCell value={items.date_created} />
                         </td>
-                        <td className="ecms-amount">{formatMoney(items.amount)}</td>
+                        <td className="ecms-amount" data-label="Amount">
+                          {formatMoney(items.amount)}
+                        </td>
                         <td className="ecms-actions">
                           <IconButton
                             label="View details"

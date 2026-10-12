@@ -1,5 +1,6 @@
 import React from "react";
 import { FiCalendar, FiPlus, FiSearch } from "react-icons/fi";
+import { HiChevronDown, HiChevronUp, HiSelector } from "react-icons/hi";
 
 // Shared pieces for list pages: avatars, person/date cells, icon actions and the list title bar.
 
@@ -150,5 +151,34 @@ export function ListHeader({
         )}
       </div>
     </div>
+  );
+}
+
+// Column header that sorts the whole list. `sort` is { field, order }.
+export function SortHeader({ field, sort, onSort, children, className }) {
+  const active = sort.field === field;
+  const ascending = active && sort.order === "asc";
+  return (
+    <th
+      className={className}
+      aria-sort={active ? (ascending ? "ascending" : "descending") : "none"}
+    >
+      <button
+        type="button"
+        className={"ecms-sort" + (active ? " is-active" : "")}
+        onClick={() => onSort({ field, order: ascending ? "desc" : "asc" })}
+      >
+        {children}
+        {active ? (
+          ascending ? (
+            <HiChevronUp aria-hidden="true" />
+          ) : (
+            <HiChevronDown aria-hidden="true" />
+          )
+        ) : (
+          <HiSelector aria-hidden="true" />
+        )}
+      </button>
+    </th>
   );
 }

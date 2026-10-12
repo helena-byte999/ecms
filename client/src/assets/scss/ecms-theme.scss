@@ -830,6 +830,32 @@ textarea.form-control {
   }
 }
 
+.ecms-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0.45;
+  }
+  &:hover,
+  &.is-active {
+    color: var(--ink);
+    svg {
+      opacity: 1;
+    }
+  }
+}
+
 .ecms-avstack {
   display: inline-flex;
   align-items: center;
@@ -930,6 +956,77 @@ textarea.form-control {
     flex: 1 1 200px;
     input {
       width: 100%;
+    }
+  }
+}
+
+// Phones: list rows become stacked cards instead of scrolling sideways.
+// First cell (the person/title) on top, actions top-right, the rest as label/value lines.
+@media (max-width: 640px) {
+  .ecms-list .table-responsive {
+    overflow: visible;
+  }
+  .ecms-list .table {
+    display: block;
+    thead {
+      display: none;
+    }
+    tbody {
+      display: block;
+    }
+    tbody tr {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px 12px;
+      padding: 14px 2px;
+      border-top: 1px solid var(--line);
+      &:first-child {
+        border-top: 0;
+      }
+      &:hover {
+        background: transparent;
+      }
+    }
+    tbody td {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+      padding: 0 !important;
+      border: 0 !important;
+      grid-column: 1 / -1;
+      text-align: right;
+    }
+    tbody td:first-child {
+      grid-column: 1;
+      justify-content: flex-start;
+      text-align: left;
+      margin-bottom: 2px;
+    }
+    tbody td.ecms-actions {
+      grid-column: 2;
+      grid-row: 1;
+      width: auto;
+    }
+    tbody td[data-label]::before {
+      content: attr(data-label);
+      flex: none;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--muted);
+      text-align: left;
+    }
+    tbody td.ecms-empty {
+      justify-content: center;
+      text-align: center;
+    }
+    // rota: day name, then the chips under it
+    .ecms-chips {
+      justify-content: flex-start;
+    }
+    .ecms-rota-day + td {
+      justify-content: flex-start;
     }
   }
 }

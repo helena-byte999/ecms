@@ -10,6 +10,7 @@ import {
   DateCell,
   IconButton,
   formatMoney,
+  SortHeader,
 } from "components/ui/ListUI.js";
 import { FiEye } from "react-icons/fi";
 import Notifications from "components/Notification/Notification";
@@ -46,6 +47,7 @@ function Invoices() {
   const [userFound, setUserFound] = useState({});
   const [pagination, setPagination] = useState({ current: 1 });
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({});
 
   async function fetchUser() {
     await axios
@@ -84,7 +86,12 @@ function Invoices() {
     () => {
       async function fetchInvoices() {
         await axios
-          .get(invoice_api.showInvoices, { params: { ...pagination, search } })
+          .get(invoice_api.showInvoices, { params: {
+              current: pagination.current,
+              search,
+              sort: sort.field,
+              order: sort.order,
+            } })
           .then((response) => {
             if (response.data.status === true) {
               setInvoices(response.data.data);
@@ -101,7 +108,7 @@ function Invoices() {
       fetchInvoices();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, pagination.current],
+    [search, pagination.current, sort],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
@@ -164,6 +171,11 @@ function Invoices() {
   //   });
   // }
 
+  function sortBy(next) {
+    setSort(next);
+    setPagination((p) => ({ ...p, current: 1 }));
+  }
+
   return (
     <>
       {notificationStatus === true ? (
@@ -191,10 +203,18 @@ function Invoices() {
                 <Table responsive>
                   <thead>
                     <tr>
-                      <th>Client</th>
-                      <th>Description</th>
-                      <th>Date</th>
-                      <th>Amount</th>
+                      <SortHeader field="client" sort={sort} onSort={sortBy}>
+                        Client
+                      </SortHeader>
+                      <SortHeader field="description" sort={sort} onSort={sortBy}>
+                        Description
+                      </SortHeader>
+                      <SortHeader field="date" sort={sort} onSort={sortBy}>
+                        Date
+                      </SortHeader>
+                      <SortHeader field="amount" sort={sort} onSort={sortBy}>
+                        Amount
+                      </SortHeader>
                       <th className="ecms-actions">Actions</th>
                     </tr>
                   </thead>
@@ -211,13 +231,13 @@ function Invoices() {
                         <td>
                           <PersonCell email={items.email} />
                         </td>
-                        <td className="ecms-muted">
+                        <td className="ecms-muted" data-label="Description">
                           {items.description || items.type || "–"}
                         </td>
-                        <td>
+                        <td data-label="Date">
                           <DateCell value={items.date_created} />
                         </td>
-                        <td className="ecms-amount">
+                        <td className="ecms-amount" data-label="Amount">
                           {formatMoney(items.amount)}
                         </td>
                         <td className="ecms-actions">

@@ -2,7 +2,13 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { schedule } from "data/api";
 import { BsArrowBarLeft } from "react-icons/bs";
-import { ListHeader, DateCell, AvatarStack, IconButton } from "components/ui/ListUI.js";
+import {
+  ListHeader,
+  DateCell,
+  AvatarStack,
+  IconButton,
+  SortHeader,
+} from "components/ui/ListUI.js";
 import { FiEye } from "react-icons/fi";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
@@ -33,6 +39,7 @@ function Schedules() {
   const [current, setCurrent] = useState({});
   const [pagination, setPagination] = useState({ current: 1 });
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({});
   const [date, setDate] = useState({});
   const days = [
     "Monday",
@@ -48,7 +55,12 @@ function Schedules() {
     () => {
       async function fetchSchedules() {
         await axios
-          .get(schedule.showAllSchedules, { params: { ...pagination, search } })
+          .get(schedule.showAllSchedules, { params: {
+              current: pagination.current,
+              search,
+              sort: sort.field,
+              order: sort.order,
+            } })
           .then((response) => {
             if (response.data.status === true) {
               setSchedules(response.data.data);
@@ -71,7 +83,7 @@ function Schedules() {
       fetchSchedules();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, pagination.current],
+    [search, pagination.current, sort],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
@@ -133,6 +145,11 @@ function Schedules() {
       });
   }
 
+  function sortBy(next) {
+    setSort(next);
+    setPagination((p) => ({ ...p, current: 1 }));
+  }
+
   return (
     <>
       {notificationStatus === true ? (
@@ -160,8 +177,12 @@ function Schedules() {
                 <Table responsive>
                   <thead>
                     <tr>
-                      <th>Week</th>
-                      <th>Dates</th>
+                      <SortHeader field="week" sort={sort} onSort={sortBy}>
+                        Week
+                      </SortHeader>
+                      <SortHeader field="dates" sort={sort} onSort={sortBy}>
+                        Dates
+                      </SortHeader>
                       <th>Staff on rota</th>
                       <th className="ecms-actions">Actions</th>
                     </tr>
@@ -179,10 +200,10 @@ function Schedules() {
                         <td>
                           <strong className="ecms-amount">Week {items.week}</strong>
                         </td>
-                        <td>
+                        <td data-label="Dates">
                           <DateCell value={items.start_date} to={items.end_date} />
                         </td>
-                        <td>
+                        <td data-label="Staff">
                           <AvatarStack
                             names={[
                               ...new Set(

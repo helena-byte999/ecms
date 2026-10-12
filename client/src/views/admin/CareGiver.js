@@ -3,7 +3,12 @@ import axios from "axios";
 import { user } from "data/api";
 import { BsArrowBarLeft } from "react-icons/bs";
 import { FaUserCircle } from "react-icons/fa";
-import { ListHeader, PersonCell, IconButton } from "components/ui/ListUI.js";
+import {
+  ListHeader,
+  PersonCell,
+  IconButton,
+  SortHeader,
+} from "components/ui/ListUI.js";
 import { FiEye } from "react-icons/fi";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
@@ -29,6 +34,7 @@ function CareGivers() {
   const [current, setCurrent] = useState({});
   const [pagination, setPagination] = useState({ current: 1 });
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({});
   const [notificationStatus, setNotificationStatus] = useState(false);
   const [notificationDetails, setNotificationDetails] = useState({
     msg: "",
@@ -45,7 +51,12 @@ function CareGivers() {
       async function fetchCareGivers() {
         await axios
           .get(user.showUsers + "/caregiver", {
-            params: { ...pagination, search },
+            params: {
+              current: pagination.current,
+              search,
+              sort: sort.field,
+              order: sort.order,
+            },
           })
           .then((response) => {
             if (response.data.status === true) {
@@ -63,7 +74,7 @@ function CareGivers() {
       fetchCareGivers();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [search, pagination.current],
+    [search, pagination.current, sort],
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
@@ -141,6 +152,11 @@ function CareGivers() {
     if (status === "in-active") return "bad";
     return "warn";
   }
+  function sortBy(next) {
+    setSort(next);
+    setPagination((p) => ({ ...p, current: 1 }));
+  }
+
   return (
     <>
       {notificationStatus === true ? (
@@ -168,10 +184,18 @@ function CareGivers() {
                 <Table responsive>
                   <thead>
                     <tr>
-                      <th>Caregiver</th>
-                      <th>Staff type</th>
-                      <th>Phone</th>
-                      <th>Status</th>
+                      <SortHeader field="name" sort={sort} onSort={sortBy}>
+                        Caregiver
+                      </SortHeader>
+                      <SortHeader field="staff_type" sort={sort} onSort={sortBy}>
+                        Staff type
+                      </SortHeader>
+                      <SortHeader field="phone" sort={sort} onSort={sortBy}>
+                        Phone
+                      </SortHeader>
+                      <SortHeader field="status" sort={sort} onSort={sortBy}>
+                        Status
+                      </SortHeader>
                       <th className="ecms-actions">Actions</th>
                     </tr>
                   </thead>
@@ -191,9 +215,11 @@ function CareGivers() {
                             email={items.email}
                           />
                         </td>
-                        <td>{items.staff_type || "–"}</td>
-                        <td className="ecms-muted">{items.phone || "–"}</td>
-                        <td>
+                        <td data-label="Staff type">{items.staff_type || "–"}</td>
+                        <td className="ecms-muted" data-label="Phone">
+                          {items.phone || "–"}
+                        </td>
+                        <td data-label="Status">
                           <span
                             className={
                               "ecms-status ecms-status--" + statusKind(items.status)

@@ -8,7 +8,16 @@ const { auth, requireRole, selfOrAdmin } = require('../../middleware/auth');
 // User Model
 const Users = require('../../models/User');
 const Invoice = require('../../models/Invoice');
-const { searchFilter, pageOf } = require('../../utils/search');
+const { searchFilter, pageOf, sortOf, collation } = require('../../utils/search');
+
+const USER_SORTS = {
+	name: [['first_name', 1], ['last_name', 1]],
+	age: [['dob', -1]],
+	phone: [['phone', 1]],
+	status: [['status', 1]],
+	staff_type: [['staff_type', 1]],
+};
+const BY_NAME = { first_name: 1, last_name: 1 };
 
 
 //@routes PUT api/user/editProfile
@@ -81,7 +90,7 @@ router.get('/show_users/:role', auth, requireRole('admin'), async (req, res) => 
 	try {
 		const { skip, take } = pageOf(req.query);
 		const filter = { role, ...searchFilter(req.query.search, ['first_name', 'last_name', 'email']) };
-		const users = await Users.find(filter).select('-password').sort({ first_name: 1, last_name: 1 }).skip(skip).limit(take);
+		const users = await Users.find(filter).select('-password').sort(sortOf(req.query, USER_SORTS, BY_NAME)).collation(collation).skip(skip).limit(take);
 		const count = await Users.countDocuments(filter);
 		res.status(200).send({ status: true, data: users, count });
 
@@ -94,7 +103,7 @@ router.get('/show_all_users', auth, requireRole('admin'), async (req, res) => {
 	try {
 		const { skip, take } = pageOf(req.query);
 		const filter = searchFilter(req.query.search, ['first_name', 'last_name', 'email']);
-		const users = await Users.find(filter).select('-password').sort({ first_name: 1, last_name: 1 }).skip(skip).limit(take);
+		const users = await Users.find(filter).select('-password').sort(sortOf(req.query, USER_SORTS, BY_NAME)).collation(collation).skip(skip).limit(take);
 		const count = await Users.countDocuments(filter);
 		res.status(200).send({ status: true, data: users, count });
 

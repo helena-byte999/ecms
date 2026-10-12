@@ -8,6 +8,7 @@ import {
   PersonCell,
   DateCell,
   IconButton,
+  SortHeader,
 } from "components/ui/ListUI.js";
 import { FiEye } from "react-icons/fi";
 import Notifications from "components/Notification/Notification";
@@ -35,6 +36,7 @@ function Contracts({ isDashboard }) {
   const [userFound, setUserFound] = useState({});
   const [pagination, setPagination] = useState({ current: 1 });
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState({});
   const [notificationStatus, setNotificationStatus] = useState(false);
   const [notificationDetails, setNotificationDetails] = useState({
     msg: "",
@@ -174,6 +176,21 @@ function Contracts({ isDashboard }) {
     if (!q) return true;
     return `${u.first_name} ${u.last_name} ${u.email}`.toLowerCase().includes(q);
   });
+  const sortKeys = {
+    name: (u) => `${u.first_name} ${u.last_name}`.toLowerCase(),
+    role: (u) => u.role || "",
+    ends: (u) => u.Contracts?.[0]?.end_date || "",
+    status: (u) => contractStatus(u)[1],
+  };
+  if (sortKeys[sort.field]) {
+    const key = sortKeys[sort.field];
+    const dir = sort.order === "desc" ? -1 : 1;
+    rows.sort((a, b) => (key(a) > key(b) ? dir : key(a) < key(b) ? -dir : 0));
+  }
+  function sortBy(next) {
+    setSort(next);
+    setPagination((p) => ({ ...p, current: 1 }));
+  }
   const perPage = isDashboard ? 6 : 10;
   const pageRows = rows.slice(
     (pagination.current - 1) * perPage,
@@ -252,10 +269,20 @@ function Contracts({ isDashboard }) {
                 <Table responsive>
                   <thead>
                     <tr>
-                      <th>Person</th>
-                      {!isDashboard ? <th>Role</th> : null}
-                      <th>Contract ends</th>
-                      <th>Status</th>
+                      <SortHeader field="name" sort={sort} onSort={sortBy}>
+                        Person
+                      </SortHeader>
+                      {!isDashboard ? (
+                        <SortHeader field="role" sort={sort} onSort={sortBy}>
+                        Role
+                      </SortHeader>
+                      ) : null}
+                      <SortHeader field="ends" sort={sort} onSort={sortBy}>
+                        Contract ends
+                      </SortHeader>
+                      <SortHeader field="status" sort={sort} onSort={sortBy}>
+                        Status
+                      </SortHeader>
                       {!isDashboard ? (
                         <th className="ecms-actions">Actions</th>
                       ) : null}
@@ -281,18 +308,18 @@ function Contracts({ isDashboard }) {
                             />
                           </td>
                           {!isDashboard ? (
-                            <td className="ecms-muted text-capitalize">
+                            <td className="ecms-muted text-capitalize" data-label="Role">
                               {items.role}
                             </td>
                           ) : null}
-                          <td>
+                          <td data-label="Contract ends">
                             {latest ? (
                               <DateCell value={latest.end_date} />
                             ) : (
                               <span className="ecms-muted">–</span>
                             )}
                           </td>
-                          <td>
+                          <td data-label="Status">
                             <span className={"ecms-status ecms-status--" + kind}>
                               {label}
                             </span>

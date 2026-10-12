@@ -6,7 +6,13 @@ const { auth, requireRole } = require('../../middleware/auth');
 // Schedule Model
 const Users = require('../../models/User');
 const Schedule = require('../../models/Schedule');
-const { searchFilter, pageOf } = require('../../utils/search');
+const { searchFilter, pageOf, sortOf } = require('../../utils/search');
+
+// week is stored as text, so both columns sort by the ISO start date
+const SCHEDULE_SORTS = {
+	week: [['start_date', 1]],
+	dates: [['start_date', 1]],
+};
 
 router.post('/add_schedule', auth, requireRole('admin'), async (req, res) => {
 	const { first, last, week } = req.body;
@@ -61,7 +67,7 @@ router.get('/show_all_schedules', auth, async (req, res) => {
 	try {
 		const { skip, take } = pageOf(req.query);
 		const filter = searchFilter(req.query.search, ['week', 'start_date', 'end_date']);
-		const sch = await Schedule.find(filter).sort({ start_date: -1, week: -1 }).skip(skip).limit(take);
+		const sch = await Schedule.find(filter).sort(sortOf(req.query, SCHEDULE_SORTS, { start_date: -1 })).skip(skip).limit(take);
 		const count = await Schedule.countDocuments(filter);
 		res.status(200).send({ status: true, data: sch, count });
 
