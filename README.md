@@ -4,7 +4,7 @@ A full-stack web application that connects elderly individuals with caregivers a
 
 **Live demo:** _coming soon_ · **Stack:** React · Tailwind CSS · Sass · Node.js · Express · MongoDB
 
-> This started as a university team project. This repository is my copy, cleaned up and documented for my portfolio. See [Team & my role](#team--my-role).
+> This started as an undergraduate team project. This repository is my copy, cleaned up and documented for my portfolio. See [Team & my role](#team--my-role).
 
 ---
 
@@ -44,7 +44,7 @@ The core schemas (defined in [`server/models`](server/models)):
 
 - **User** — email, name, date of birth, role, address, phone, status, staff type, medical info, password; embeds **Contracts**, **Next of Kin**, and **Emergency Contact**.
 - **Invoice** — email, amount, type, description, date created.
-- **Schedule** — user, week, start/end dates, schedule entries.
+- **Schedule** — week, start/end dates, schedule entries.
 
 ## Team & my role
 
