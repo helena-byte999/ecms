@@ -196,22 +196,11 @@ router.get('/show_all_users', auth, requireRole('admin'), async (req, res) => {
 	}
 });
 
+// A contract counts until the end of its end date; one that hasn't started yet
+// is signed, so it counts too (the UI labels it "Starts soon")
 function checkDates(start1, end1) {
-	if (!start1 || !end1) {
-		return false;
-	}
-	const date = new Date();
-
-	const start = new Date(start1);
-	const end = new Date(end1);
-	let result = null;
-
-	if (date > start && date < end) {
-		result = true;
-	} else {
-		result = false;
-	}
-	return result;
+	if (!start1 || !end1) return false;
+	return new Date() <= new Date(end1 + 'T23:59:59Z');
 }
 
 

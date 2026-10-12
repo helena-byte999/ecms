@@ -91,11 +91,9 @@ function Contracts({ isDashboard }) {
       });
   }
 
-  useEffect(
-    () => {
-      async function fetchContracts() {
+  async function fetchContracts() {
         await axios
-          .get(user.showAllContracts, { params: { ...pagination, search } })
+          .get(user.showAllContracts)
           .then((response) => {
             if (response.data.status === true) {
               setCts({
@@ -112,7 +110,9 @@ function Contracts({ isDashboard }) {
               setNotificationStatus(true);
             }
           });
-      }
+  }
+  useEffect(
+    () => {
       fetchContracts();
     },
     // search and paging happen in the browser over the full list
@@ -121,66 +121,54 @@ function Contracts({ isDashboard }) {
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
+  // A contract counts until the end of its end date. One that hasn't started yet
+  // still counts (it's signed); it's labelled "Starts soon".
   function checkDates(start1, end1) {
-    if (!start1 || !end1) {
-      return false;
-    }
-    const date = new Date();
-
-    const start = new Date(start1);
-    const end = new Date(end1);
-    let result = null;
-
-    if (date > start && date < end) {
-      result = true;
-    } else {
-      result = false;
-    }
-    return result;
+    if (!start1 || !end1) return false;
+    return new Date() <= new Date(end1 + "T23:59:59");
   }
+  const startsLater = (start) =>
+    !!start && new Date() < new Date(start + "T00:00:00");
   async function addContract(e) {
     e.preventDefault();
-    if (newContract.start_date && newContract.end_date) {
-      let newC = userFound;
-      newC.Contracts = [newContract, ...(newC.Contracts || [])];
-      await axios
-        .patch(user.updateUser + "/" + userFound._id, newC)
-        .then((res) => {
-          if (res.data.status) {
-            setNotificationDetails({
-              msg: "Contract Added Successfully.",
-              type: "success",
-            });
-            setUserFound({});
-            e.target.reset();
-          } else {
-            setNotificationDetails({
-              msg: "Error Adding Contract.",
-              type: "Danger",
-            });
-          }
-          setNotificationStatus(true);
-        })
-        .catch((error) => {
-          if (error.response) {
-            setNotificationDetails({
-              msg: error.response.data.message,
-              type: "danger",
-            });
-            setNotificationStatus(true);
-          } else {
-            setNotificationDetails({ msg: "Network Error!", type: "danger" });
-            setNotificationStatus(true);
-          }
+    const { start_date, end_date } = newContract;
+    if (!start_date || !end_date) {
+      setNotificationDetails({ msg: "Please choose a start and end date.", type: "danger" });
+      setNotificationStatus(true);
+      return;
+    }
+    if (end_date <= start_date) {
+      setNotificationDetails({ msg: "The end date must be after the start date.", type: "danger" });
+      setNotificationStatus(true);
+      return;
+    }
+    try {
+      // newest contract first: it becomes the current one
+      const res = await axios.patch(user.updateUser + "/" + userFound._id, {
+        Contracts: [newContract, ...(userFound.Contracts || [])],
+      });
+      if (res.data.status) {
+        setNotificationDetails({
+          msg: `Contract added for ${userFound.first_name} ${userFound.last_name}.`,
+          type: "success",
         });
-    } else {
+        setUserFound({});
+        setNewContract({});
+        setCurrent({});
+        await fetchContracts();
+        setMode("all");
+      } else {
+        setNotificationDetails({ msg: res.data.msg || "Couldn't add the contract.", type: "danger" });
+      }
+    } catch (error) {
       setNotificationDetails({
-        msg: "Please input start date and finish date.",
+        msg: error.response?.data?.msg || "Couldn't reach the server.",
         type: "danger",
       });
-      setNotificationStatus(true);
     }
+    setNotificationStatus(true);
   }
+
 
   // Care contracts belong to clients and caregivers, not admin accounts
   const rows = (cts[selection] || []).filter((u) => {
@@ -212,9 +200,8 @@ function Contracts({ isDashboard }) {
   function contractStatus(u) {
     const latest = u.Contracts?.[0];
     if (!latest) return ["warn", "No contract"];
-    return checkDates(latest.start_date, latest.end_date)
-      ? ["ok", "Valid"]
-      : ["bad", "Expired"];
+    if (!checkDates(latest.start_date, latest.end_date)) return ["bad", "Expired"];
+    return startsLater(latest.start_date) ? ["ok", "Starts soon"] : ["ok", "Valid"];
   }
 
   return (
@@ -559,7 +546,7 @@ function Contracts({ isDashboard }) {
                                     className="ecms-status ecms-status--ok"
                                     style={{ cursor: "not-allowed" }}
                                   >
-                                    Valid
+                                    {startsLater(items.start_date) ? "Starts soon" : "Valid"}
                                   </div>
                                 ) : (
                                   <div

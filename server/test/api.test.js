@@ -167,6 +167,16 @@ const person = (email, role) => ({
 	await call('PATCH', `/api/user/set_status/${cg0._id}`, { token: admin, body: { status: 'active' } });
 	check('reactivated account can sign in again', (await call('POST', '/api/auth', { body: { email: 'cg0@test.com', password: 'pass1234' } })).data?.auth === true);
 
+	// Contract status edge cases
+	const ymd = d => d.toISOString().slice(0, 10);
+	const other = (await call('GET', '/api/user/show_user_by_email/other@test.com', { token: admin })).data.data;
+	await call('PATCH', `/api/user/update_user/${other._id}`, { token: admin, body: { Contracts: [{ start_date: ymd(new Date(Date.now() + 20 * 86400000)), end_date: ymd(new Date(Date.now() + 400 * 86400000)) }] } });
+	let buckets = (await call('GET', '/api/user/show_all_contracts', { token: admin })).data;
+	check('a contract that starts next month is not "expired"', buckets.valid.some(u => u.email === 'other@test.com') && !buckets.expired.some(u => u.email === 'other@test.com'));
+	await call('PATCH', `/api/user/update_user/${other._id}`, { token: admin, body: { Contracts: [{ start_date: '2025-01-01', end_date: ymd(new Date()) }] } });
+	buckets = (await call('GET', '/api/user/show_all_contracts', { token: admin })).data;
+	check('a contract is still valid on its last day', buckets.valid.some(u => u.email === 'other@test.com'));
+
 	// Editing people
 	const edited = await call('PATCH', `/api/user/update_user/${clientId}`, { token: admin, body: { first_name: 'Testy', phone: '07700 111222', role: 'admin' } });
 	check('admin can edit a person and gets the saved record back', edited.data?.status === true && edited.data.data.first_name === 'Testy' && edited.data.data.phone === '07700 111222');

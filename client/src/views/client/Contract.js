@@ -43,23 +43,14 @@ function Contracts() {
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
 
+  // A contract counts until the end of its end date. One that hasn't started yet
+  // still counts (it's signed); it's labelled "Starts soon".
   function checkDates(start1, end1) {
-    if (!start1 || !end1) {
-      return false;
-    }
-    const date = new Date();
-
-    const start = new Date(start1);
-    const end = new Date(end1);
-    let result = null;
-
-    if (date > start && date < end) {
-      result = true;
-    } else {
-      result = false;
-    }
-    return result;
+    if (!start1 || !end1) return false;
+    return new Date() <= new Date(end1 + "T23:59:59");
   }
+  const startsLater = (start) =>
+    !!start && new Date() < new Date(start + "T00:00:00");
 
   return (
     <>
@@ -113,7 +104,7 @@ function Contracts() {
                                     className="ecms-status ecms-status--ok"
                                     style={{ cursor: "not-allowed" }}
                                   >
-                                    Valid
+                                    {startsLater(items.start_date) ? "Starts soon" : "Valid"}
                                   </div>
                                 ) : (
                                   <>
