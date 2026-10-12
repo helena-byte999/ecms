@@ -257,34 +257,72 @@ router.get('/show_user_by_email/:email', auth, selfOrAdmin, async (req, res) => 
 });
 
 
+// Unpaid total, how many invoices are unpaid, and how many of those are past due
+async function outstanding(filter = {}) {
+	const today = new Date().toISOString().slice(0, 10);
+	const unpaid = await Invoice.find({ ...filter, status: { $ne: 'paid' } }).select('amount due_date');
+	return {
+		outstanding: unpaid.reduce((sum, i) => sum + (Number(i.amount) || 0), 0),
+		unpaid: unpaid.length,
+		overdue: unpaid.filter(i => i.due_date && i.due_date < today).length,
+	};
+}
+
+// The person's current (newest) contract: 'valid' (incl. not started yet), 'expired' or 'none'
+function contractState(u) {
+	const c = u.Contracts && u.Contracts[0];
+	if (!c) return 'none';
+	return checkDates(c.start_date, c.end_date) ? 'valid' : 'expired';
+}
+
+//@routes GET api/user/get_counts
+//@desc Admin dashboard figures
 router.get('/get_counts', auth, requireRole('admin'), async (req, res) => {
 	try {
-		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
-		let users = await Users.find();
-		let clients = await Users.countDocuments({ role: "client" });
-		let contracts = 0;
-		if (!users) { return res.status(400).send({ status: false, msg: 'User not found' }); };
-		users.map((u) => {
-			contracts += u.Contracts.length || 0;
+		const users = await Users.find().select('role status Contracts');
+		const soon = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+		const clients = users.filter(u => u.role === 'client');
+		const carers = users.filter(u => u.role === 'caregiver');
+		const people = users.filter(u => u.role !== 'admin');
+		const valid = people.filter(u => contractState(u) === 'valid');
+		return res.status(200).send({
+			status: true,
+			data: {
+				users: users.length,
+				contracts: users.reduce((n, u) => n + (u.Contracts?.length || 0), 0),
+				clients: clients.length,
+				clientsWithoutContract: clients.filter(u => contractState(u) !== 'valid').length,
+				caregivers: carers.length,
+				caregiversActive: carers.filter(u => u.status === 'active').length,
+				caregiversOnLeave: carers.filter(u => u.status === 'on-leave').length,
+				contractsValid: valid.length,
+				contractsExpiringSoon: valid.filter(u => u.Contracts[0].end_date <= soon).length,
+				...(await outstanding()),
+			},
 		});
-		return res.status(200).send({ status: true, data: { users: users.length, contracts, clients } });
-
 	} catch (err) {
 		console.error(err);
 		return res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
+//@routes GET api/user/get_counts/:email
+//@desc Figures for a client's or caregiver's own dashboard
 router.get('/get_counts/:email', auth, selfOrAdmin, async (req, res) => {
 	try {
 		const { email } = req.params;
-		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
-		let invoices = await Invoice.countDocuments({ email });
-		let client = await Users.findOne({ email });
-		let contracts = client?.Contracts?.length || 0;
-
-		return res.status(200).send({ status: true, data: { invoices, contracts } });
-
+		const invoices = await Invoice.countDocuments({ email });
+		const person = await Users.findOne({ email }).select('Contracts');
+		const current = person?.Contracts?.[0] || null;
+		return res.status(200).send({
+			status: true,
+			data: {
+				invoices,
+				contracts: person?.Contracts?.length || 0,
+				contract: current && { start_date: current.start_date, end_date: current.end_date, state: contractState(person) },
+				...(await outstanding({ email })),
+			},
+		});
 	} catch (err) {
 		console.error(err);
 		return res.status(400).json({ msg: 'Something went wrong. Please try again.' });

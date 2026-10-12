@@ -29,6 +29,33 @@ function invoiceProblem(data) {
 
 const inDays = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
 
+//@routes GET api/invoice/summary?months=6
+//@desc Per billing month: total invoiced and how much of it has been paid (admin)
+router.get('/summary', auth, requireRole('admin'), async (req, res) => {
+	const count = Math.min(Math.max(parseInt(req.query.months, 10) || 6, 1), 24);
+	const now = new Date();
+	const months = [];
+	for (let back = count - 1; back >= 0; back--) {
+		const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - back, 1));
+		months.push({ month: d.toISOString().slice(0, 7), invoiced: 0, paid: 0 });
+	}
+	try {
+		const from = new Date(months[0].month + '-01T00:00:00Z');
+		const invoices = await Invoices.find({ date_created: { $gte: from } }).select('amount status date_created');
+		const byMonth = Object.fromEntries(months.map(m => [m.month, m]));
+		for (const inv of invoices) {
+			const m = byMonth[new Date(inv.date_created).toISOString().slice(0, 7)];
+			if (!m) continue;
+			m.invoiced += Number(inv.amount) || 0;
+			if (inv.status === 'paid') m.paid += Number(inv.amount) || 0;
+		}
+		res.status(200).send({ status: true, data: months });
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ status: false, msg: 'Something went wrong. Please try again.' });
+	}
+});
+
 //@routes POST api/invoice/add_invoice
 //@desc Raise an invoice for a client or caregiver (admin). Due in 14 days unless given.
 router.post('/add_invoice', auth, requireRole('admin'), async (req, res) => {

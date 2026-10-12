@@ -63,7 +63,7 @@ async function waitFor(server, text, ms = 15000) {
 	const contracts = (await call('GET', '/api/user/show_all_contracts', { token: admin.token })).data;
 	check('sample contracts include valid, expired and none', contracts.valid.length > 0 && contracts.expired.length > 0 && contracts.noContracts.filter(u => u.role !== 'admin').length > 0);
 	const myInvoices = await call('GET', '/api/invoice/show_invoice/client@example.com', { token: client.token });
-	check('demo client has their own invoices', myInvoices.data?.count === 3);
+	check('demo client has their own invoices', myInvoices.data?.count === 6);
 	const rotas = await call('GET', '/api/schedule/show_all_schedules', { token: caregiver.token });
 	check('this week and last week have rotas', rotas.data?.count === 2);
 	const onRota = Object.values(rotas.data.data[0].schedule).flat().map(s => s.email);
@@ -73,6 +73,14 @@ async function waitFor(server, text, ms = 15000) {
 	const today = new Date().toISOString().slice(0, 10);
 	check('sample invoices include paid, unpaid and overdue', allInv.some(i => i.status === 'paid') && allInv.some(i => i.status === 'unpaid' && i.due_date >= today) && allInv.some(i => i.status === 'unpaid' && i.due_date < today));
 	check('demo accounts cannot change their password', (await call('POST', '/api/auth/change_password', { token: client.token, body: { current_password: 'demo-pass', new_password: 'something-new' } })).status === 403);
+	const figs = (await call('GET', '/api/user/get_counts', { token: admin.token })).data?.data;
+	check('dashboard figures add up', figs && figs.clients === 12 && figs.caregivers === 8 && figs.caregiversActive === 6 && figs.caregiversOnLeave === 1 && figs.contractsValid === figs.caregivers + 8 && figs.clientsWithoutContract === 4 && figs.unpaid === figs.overdue + 10 && figs.contractsExpiringSoon === 2 && figs.outstanding > 0, JSON.stringify(figs));
+	const summary = (await call('GET', '/api/invoice/summary?months=6', { token: admin.token })).data?.data;
+	const thisMonth = summary?.[summary.length - 1];
+	check('chart data: 6 months, this month invoiced but unpaid', summary?.length === 6 && thisMonth.invoiced > 0 && thisMonth.paid === 0 && summary[3].paid > 0, JSON.stringify(summary));
+	check('chart data is admin-only', (await call('GET', '/api/invoice/summary', { token: client.token })).status === 403);
+	const mine = (await call('GET', '/api/user/get_counts/client@example.com', { token: client.token })).data?.data;
+	check('client dashboard: contract state and amount to pay', mine?.contract?.state === 'valid' && mine.outstanding === 2400 && mine.unpaid === 1, JSON.stringify(mine));
 	check('regular sign-in works with the demo password', (await call('POST', '/api/auth', { body: { email: 'client@example.com', password: 'demo-pass' } })).data?.auth === true);
 	const clientId = myInvoices && (await call('GET', '/api/user/show_user_by_email/client@example.com', { token: admin.token })).data.data._id;
 	check('demo sign-in accounts cannot be deactivated', (await call('PATCH', `/api/user/set_status/${clientId}`, { token: admin.token, body: { status: 'in-active' } })).status === 403);

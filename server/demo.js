@@ -20,7 +20,7 @@ const isDemoAccount = (user) => !!user && Object.values(ACCOUNTS).includes(user.
 
 const RESET_HOUR_UTC = 3;
 // Bump when the sample data changes, so the next deploy re-seeds straight away
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 const DAY = 86400000;
 
 const caregivers = [
@@ -34,16 +34,16 @@ const caregivers = [
 	['Kwame', 'Mensah', 'kwame.mensah@example.com', 'in-active', 'Volunteer'],
 ];
 
-// [first, last, email, contract: 'valid' | 'expired' | 'none', monthly amount]
+// [first, last, email, contract: 'valid' | 'soon' (ends within 30 days) | 'expired' | 'none', monthly amount]
 const clients = [
 	['Margaret', 'Okafor', ACCOUNTS.client, 'valid', 2400],
 	['Edward', 'Lindqvist', 'edward.lindqvist@example.com', 'valid', 2150],
 	['Agnes', 'Mensah', 'agnes.mensah@example.com', 'valid', 2850],
 	['Harold', 'Brennan', 'harold.brennan@example.com', 'expired', 1950],
-	['Winifred', 'Shaw', 'winifred.shaw@example.com', 'valid', 3100],
+	['Winifred', 'Shaw', 'winifred.shaw@example.com', 'soon', 3100],
 	['Arthur', 'Kowalski', 'arthur.kowalski@example.com', 'valid', 2600],
 	['Beatrice', 'Eze', 'beatrice.eze@example.com', 'none', 0],
-	['Leonard', 'Fitzgerald', 'leonard.fitzgerald@example.com', 'valid', 2250],
+	['Leonard', 'Fitzgerald', 'leonard.fitzgerald@example.com', 'soon', 2250],
 	['Dorothy', 'Hughes', 'dorothy.hughes@example.com', 'expired', 2700],
 	['Samuel', 'Achebe', 'samuel.achebe@example.com', 'valid', 1850],
 	['Irene', 'Novak', 'irene.novak@example.com', 'none', 0],
@@ -63,6 +63,9 @@ const monthName = (d) => d.toLocaleString('en-GB', { month: 'long', year: 'numer
 
 function contractFor(kind, now) {
 	if (kind === 'none') return [];
+	if (kind === 'soon') {
+		return [{ start_date: ymd(new Date(now - 345 * DAY)), end_date: ymd(new Date(now + 20 * DAY)), description: 'Residential care agreement' }];
+	}
 	if (kind === 'expired') {
 		return [{ start_date: ymd(new Date(now - 395 * DAY)), end_date: ymd(new Date(now - 30 * DAY)), description: 'Residential care agreement' }];
 	}
@@ -107,16 +110,16 @@ async function resetDemoData() {
 	];
 	const created = await Users.insertMany(people);
 
-	// Three monthly invoices for every client who has (or had) a contract: earlier
+	// Six monthly invoices for every client who has (or had) a contract: earlier
 	// months paid, this month unpaid; clients with an expired contract still owe last month
 	const invoices = [];
 	clients.forEach(([, , email, kind, amount]) => {
 		if (kind === 'none') return;
-		for (let back = 2; back >= 0; back--) {
+		for (let back = 5; back >= 0; back--) {
 			const d = new Date(now);
 			const month = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - back, 1, 9));
 			const due = new Date(month.getTime() + 14 * DAY);
-			const paid = back === 2 || (back === 1 && kind !== 'expired');
+			const paid = back >= 2 || (back === 1 && kind !== 'expired');
 			invoices.push({
 				email, amount, type: 'Monthly care', description: `${monthName(month)} care package`,
 				date_created: month, due_date: ymd(due),

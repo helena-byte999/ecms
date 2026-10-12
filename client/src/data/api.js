@@ -35,6 +35,8 @@ export const invoice_api = {
 
   showInvoices: `${BackEnd}/api/invoice/show_invoices`,
   showInvoice: `${BackEnd}/api/invoice/show_invoice`,
+  // per-month invoiced vs paid, for the admin dashboard chart
+  summary: `${BackEnd}/api/invoice/summary`,
   //---------------------------------------------------------------------------------------------------
 };
 
