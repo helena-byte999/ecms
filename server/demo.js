@@ -105,14 +105,22 @@ async function resetDemoData() {
 	];
 	const created = await Users.insertMany(people);
 
-	// Three monthly invoices for every client who has (or had) a contract
+	// Three monthly invoices for every client who has (or had) a contract: earlier
+	// months paid, this month unpaid; clients with an expired contract still owe last month
 	const invoices = [];
 	clients.forEach(([, , email, kind, amount]) => {
 		if (kind === 'none') return;
 		for (let back = 2; back >= 0; back--) {
 			const d = new Date(now);
 			const month = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() - back, 1, 9));
-			invoices.push({ email, amount, type: 'Monthly care', description: `${monthName(month)} care package`, date_created: month });
+			const due = new Date(month.getTime() + 14 * DAY);
+			const paid = back === 2 || (back === 1 && kind !== 'expired');
+			invoices.push({
+				email, amount, type: 'Monthly care', description: `${monthName(month)} care package`,
+				date_created: month, due_date: ymd(due),
+				status: paid ? 'paid' : 'unpaid',
+				paid_at: paid ? new Date(month.getTime() + 9 * DAY) : undefined,
+			});
 		}
 	});
 	await Invoices.insertMany(invoices);

@@ -22,11 +22,12 @@ ECMS is role-based. Everyone signs in to the same system and sees only what they
 ## Features
 
 - **Role-based dashboards** with server-side permission checks: people only ever see their own records
-- **People**: client and caregiver profiles with medical notes, next of kin and emergency contacts
+- **People**: client and caregiver profiles with medical notes, next of kin and emergency contacts; admins can edit them (changing an email keeps that person's invoices and rotas linked)
 - **Deactivate / reactivate** accounts: records are kept, the person can't sign in and is left off new rotas
-- **Contracts**: valid, expired and "no contract" at a glance, with end dates
+- **Contracts**: valid, expired and "no contract" at a glance, with end dates and a per-person history
 - **Automatic weekly rota** from every active caregiver: shares differ by at most one shift, nobody works the same day twice, and caregivers per day is adjustable
-- **Invoices** formatted in the care home's currency
+- **Invoices**: due dates, paid / unpaid / overdue status, one-click "mark as paid", editable, in the care home's currency
+- **Passwords**: everyone can change their own; admins can set a temporary one
 - **Search, sortable columns and paging** across the whole list, not just the visible page
 - **Responsive**: on phones, tables turn into readable cards
 - **Demo mode**: sample data, one-click role sign-in, nightly reset
@@ -65,7 +66,7 @@ Everything in the demo is sample data and resets every night (03:00 UTC), so fee
 | Backend | Node.js 22, Express |
 | Database | MongoDB with Mongoose 8 |
 | Auth & security | JSON Web Tokens, bcrypt, role checks, helmet, rate-limited sign-in |
-| Testing & CI | 72 API checks against a throwaway MongoDB, run by GitHub Actions on every push |
+| Testing & CI | 100 API checks against a throwaway MongoDB, run by GitHub Actions on every push |
 | Hosting | Vercel (frontend), Render (API), MongoDB Atlas (database) |
 
 ## Requirements, UML and data model
@@ -78,7 +79,7 @@ The [requirements & design document](docs/requirements.md) has the original 2022
 
 ## Team & my role
 
-This was a group project with four students. The original team repository is [NabsCodes/ecms](https://github.com/NabsCodes/ecms).
+This was a group project by **Ena Otuokon** (me), **Munachi Umeh**, **Hassan Hassan** and **Abdulhamid Tukur**, supervised by **Alexey Vedishchev**, and presented on 2 December 2022. The original team repository is [NabsCodes/ecms](https://github.com/NabsCodes/ecms).
 
 **My contributions:**
 - **Frontend**: built and styled the React views and components

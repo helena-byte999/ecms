@@ -79,4 +79,7 @@ export const authenticate = {
 
   // one-click demo sign-in ({ role }), demo deployments only
   demoAuth: `${BackEnd}/api/auth/demo`,
+
+  // change your own password ({ current_password, new_password })
+  changePassword: `${BackEnd}/api/auth/change_password`,
 };

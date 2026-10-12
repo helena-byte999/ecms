@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import { user } from "../../data/api";
 import { BsArrowBarLeft } from "react-icons/bs";
@@ -43,11 +44,23 @@ function Contracts({ isDashboard }) {
     type: "",
   });
   const [selection, setSelection] = useState("all");
+  const location = useLocation();
+  useEffect(() => {
+    const email = location.state?.addFor;
+    if (email && !isDashboard) {
+      setMode("add");
+      setCurrent({ email });
+      fetchUser(email);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [newContract, setNewContract] = useState({});
-  async function fetchUser() {
+  // called from the "Find User" button, or with an email when opened from a person's page
+  async function fetchUser(emailArg) {
+    const email = typeof emailArg === "string" ? emailArg : current.email;
     await axios
-      .get(user.showUserByEmail + "/" + current.email)
+      .get(user.showUserByEmail + "/" + email)
       .then((response) => {
         if (response.data.status === true) {
           setUserFound(response.data.data);
@@ -389,8 +402,9 @@ function Contracts({ isDashboard }) {
                       <FormGroup>
                         <label>Email</label>
                         <Input
-                          placeholder="abdul@gmail.com"
-                          type="text"
+                          placeholder="Person's email"
+                          type="email"
+                          value={current.email || ""}
                           onChange={(e) =>
                             setCurrent({ ...current, email: e.target.value })
                           }

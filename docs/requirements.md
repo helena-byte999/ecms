@@ -1,6 +1,6 @@
 # Requirements & design
 
-ECMS started as an undergraduate team project, presented on 2 December 2022. I led the frontend, the database design, the UML diagrams and this requirements documentation. This page keeps the original 2022 requirements and diagrams, and adds updated diagrams showing how the system works today.
+ECMS started as an undergraduate team project by Ena Otuokon, Munachi Umeh, Hassan Hassan and Abdulhamid Tukur, supervised by Alexey Vedishchev, and presented on 2 December 2022. I (Ena) led the frontend, the database design, the UML diagrams and this requirements documentation. This page keeps the original 2022 requirements and diagrams, and adds updated diagrams showing how the system works today.
 
 - [Problem](#problem)
 - [Objectives](#objectives)
@@ -46,7 +46,7 @@ The 2022 scenario, and where each step stands today:
 | 3 | Administrator creates contracts for clients and caregivers | ✅ Built |
 | 4 | Clients and caregivers sign in | ✅ Built |
 | 5 | Clients and caregivers view their account and contract | ✅ Built |
-| 6 | Client pays for care | ⏳ Not built: invoices are records; no payment processing |
+| 6 | Client pays for care | 🟨 Invoices have due dates and paid / unpaid / overdue status; the admin marks them paid. No online payment |
 | 7 | Administrator creates the caregivers' schedule | ✅ Built: one-click weekly rota |
 | 8 | Caregiver views their schedule | ✅ Built, with their own shifts highlighted |
 | 9 | Administrator pays caregivers' salaries | ⏳ Not built |
@@ -56,15 +56,15 @@ The 2022 scenario, and where each step stands today:
 | Actor | Use case (2022 design) | Status today |
 |---|---|---|
 | All | Log in / log out, verify login details, handle invalid login | ✅ Built. Same message for unknown email or wrong password, and repeated attempts are rate-limited |
-| Admin | Create / update client account | ✅ Create. Updating other people's details isn't in the UI yet |
-| Admin | Create / update caregiver account | ✅ Create. Updating isn't in the UI yet |
+| Admin | Create / update client account | ✅ Built. Changing an email keeps invoices and rotas linked |
+| Admin | Create / update caregiver account | ✅ Built |
 | Admin | **Disable client / caregiver account** | ✅ **Built as deactivate / reactivate.** Records are kept, the person can't sign in, and they're left off new rotas |
 | Admin | Create / update client and caregiver contracts | ✅ Create. A new contract becomes the current one |
 | Admin | Terminate contract | ⏳ Not built (contracts end on their end date) |
 | Admin | Create / update schedule | ✅ Generate or regenerate a week's rota from every active caregiver |
 | Admin | Pay salary | ⏳ Not built |
 | Client | View contract, view account | ✅ Built |
-| Client | Pay for care / pay invoice | 🟨 Invoices can be viewed, not paid |
+| Client | Pay for care / pay invoice | 🟨 Clients see each invoice's due date and status; payment happens outside the app |
 | Client, Caregiver | Request to modify contract / account / schedule | ⏳ Not built |
 | Caregiver | View schedule | ✅ Built |
 
@@ -165,6 +165,9 @@ erDiagram
     number amount
     string type
     string description
+    string due_date
+    string status "paid or unpaid; overdue = unpaid past due"
+    date paid_at
     date date_created
   }
   SCHEDULE {
@@ -188,9 +191,12 @@ classDiagram
     +status
     +signIn()
     +viewProfile()
+    +changePassword()
   }
   class Administrator {
     +addPerson()
+    +editPerson()
+    +setTemporaryPassword()
     +setStatus(status)
     +addContract()
     +generateRota(perDay)
@@ -219,7 +225,9 @@ classDiagram
     +email
     +amount
     +description
-    +date_created
+    +due_date
+    +status
+    +markPaid()
   }
   class Schedule {
     +week
@@ -257,8 +265,8 @@ From the 2022 presentation:
 
 Added since:
 
-- Editing people's details from the admin screens, and terminating contracts early
-- Invoice status (paid / unpaid) and due dates; online payment
+- Terminating contracts early
+- Online payment of invoices
 - "Request a change" for clients and caregivers
-- Password reset
+- Password reset by email (today: change your own password, or ask the administrator for a temporary one)
 - Linking invoices to users by ID rather than email

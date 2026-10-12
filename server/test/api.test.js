@@ -92,9 +92,9 @@ const person = (email, role) => ({
 
 	// Former crash paths
 	const missing = await call('PATCH', '/api/user/update_user/000000000000000000000000', { token: admin, body: { phone: '1' } });
-	check('updating a missing user returns 400', missing.status === 400);
+	check('updating a missing person returns 404', missing.status === 404);
 	const missingInv = await call('PATCH', '/api/invoice/update_invoice', { token: admin, body: { _id: '000000000000000000000000', amount: 1 } });
-	check('updating a missing invoice returns 400', missingInv.status === 400);
+	check('updating a missing invoice returns 404', missingInv.status === 404);
 
 	// Schedules
 	check('anonymous user cannot generate schedules', (await call('POST', '/api/schedule/add_schedule', { body: { first: '2026-10-12', last: '2026-10-18', week: '42' } })).data?.status !== true);
@@ -166,6 +166,54 @@ const person = (email, role) => ({
 	check('per-day count is capped at the number of active caregivers', capped.data?.perDay === 6);
 	await call('PATCH', `/api/user/set_status/${cg0._id}`, { token: admin, body: { status: 'active' } });
 	check('reactivated account can sign in again', (await call('POST', '/api/auth', { body: { email: 'cg0@test.com', password: 'pass1234' } })).data?.auth === true);
+
+	// Editing people
+	const edited = await call('PATCH', `/api/user/update_user/${clientId}`, { token: admin, body: { first_name: 'Testy', phone: '07700 111222', role: 'admin' } });
+	check('admin can edit a person and gets the saved record back', edited.data?.status === true && edited.data.data.first_name === 'Testy' && edited.data.data.phone === '07700 111222');
+	check('role cannot be changed by editing', edited.data?.data?.role === 'client');
+	check('edited record never includes the password hash', edited.data?.data && !('password' in edited.data.data));
+	check('required fields cannot be blanked', (await call('PATCH', `/api/user/update_user/${clientId}`, { token: admin, body: { last_name: '  ' } })).status === 400);
+	check('made-up statuses are rejected', (await call('PATCH', `/api/user/update_user/${clientId}`, { token: admin, body: { status: 'suspended' } })).status === 400);
+	check("admin can't change their own status by editing", (await call('PATCH', `/api/user/update_user/${adminId}`, { token: admin, body: { status: 'in-active' } })).status === 400);
+	check('email already in use is rejected', (await call('PATCH', `/api/user/update_user/${clientId}`, { token: admin, body: { email: 'other@test.com' } })).status === 400);
+	check('invalid email is rejected', (await call('PATCH', `/api/user/update_user/${clientId}`, { token: admin, body: { email: 'not-an-email' } })).status === 400);
+	const invBefore = (await call('GET', '/api/invoice/show_invoice/client@test.com', { token: admin })).data.count;
+	await call('PATCH', `/api/user/update_user/${clientId}`, { token: admin, body: { email: 'Renamed@Test.com' } });
+	const invAfter = (await call('GET', '/api/invoice/show_invoice/renamed@test.com', { token: admin })).data.count;
+	const invOld = (await call('GET', '/api/invoice/show_invoice/client@test.com', { token: admin })).data.count;
+	check("changing someone's email keeps their invoices", invBefore > 0 && invAfter === invBefore && invOld === 0, `${invBefore} -> ${invAfter}`);
+	await call('PATCH', `/api/user/update_user/${clientId}`, { token: admin, body: { email: 'client@test.com', first_name: 'Test' } });
+	const cg1 = (await call('GET', '/api/user/show_user_by_email/cg1@test.com', { token: admin })).data.data;
+	await call('PATCH', `/api/user/update_user/${cg1._id}`, { token: admin, body: { email: 'carer.one@test.com', first_name: 'Carer' } });
+	const rotaSlots = (await call('GET', '/api/schedule/show_all_schedules', { token: admin })).data.data.flatMap(sc => Object.values(sc.schedule).flat());
+	check('rotas follow a caregiver\'s new email and name', !rotaSlots.some(x => x.email === 'cg1@test.com') && rotaSlots.some(x => x.email === 'carer.one@test.com' && x.name.startsWith('Carer ')));
+	check('admin password reset rejects short passwords', (await call('PATCH', `/api/user/update_user/${cg1._id}`, { token: admin, body: { password: 'short' } })).status === 400);
+	await call('PATCH', `/api/user/update_user/${cg1._id}`, { token: admin, body: { password: 'brand-new-pass' } });
+	check('admin can set a new password', (await call('POST', '/api/auth', { body: { email: 'carer.one@test.com', password: 'brand-new-pass' } })).data?.auth === true);
+	check('blank password field keeps the current password', (await call('PATCH', `/api/user/update_user/${cg1._id}`, { token: admin, body: { password: '', phone: '1' } })).data?.status === true && (await call('POST', '/api/auth', { body: { email: 'carer.one@test.com', password: 'brand-new-pass' } })).data?.auth === true);
+
+	// Invoices: validation, due dates, paid / unpaid
+	check('invoice for an unknown email is rejected', (await call('POST', '/api/invoice/add_invoice', { token: admin, body: { email: 'ghost@test.com', amount: 10 } })).status === 400);
+	check('invoice amount must be positive', (await call('POST', '/api/invoice/add_invoice', { token: admin, body: { email: 'client@test.com', amount: 0 } })).status === 400);
+	const newInv = (await call('POST', '/api/invoice/add_invoice', { token: admin, body: { email: 'client@test.com', amount: 120, type: 'Extras', description: 'Physio' } })).data?.data;
+	const in14 = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+	check('new invoices are unpaid, keep their type, and are due in 14 days', newInv?.status === 'unpaid' && newInv.type === 'Extras' && newInv.due_date === in14, JSON.stringify({ s: newInv?.status, t: newInv?.type, d: newInv?.due_date }));
+	const paid = (await call('PATCH', '/api/invoice/update_invoice', { token: admin, body: { _id: newInv._id, status: 'paid' } })).data?.data;
+	check('marking paid records when', paid?.status === 'paid' && !!paid.paid_at);
+	const unpaid = (await call('PATCH', '/api/invoice/update_invoice', { token: admin, body: { _id: newInv._id, status: 'unpaid' } })).data?.data;
+	check('marking unpaid clears the paid date', unpaid?.status === 'unpaid' && !unpaid.paid_at);
+	const editedInv = (await call('PATCH', '/api/invoice/update_invoice', { token: admin, body: { _id: newInv._id, amount: 135, description: 'Physio x3', due_date: '2026-12-01', email: 'hacker@test.com' } })).data?.data;
+	check('admin can edit an invoice (but not move it to someone else)', editedInv?.amount === 135 && editedInv.description === 'Physio x3' && editedInv.due_date === '2026-12-01' && editedInv.email === 'client@test.com');
+	check('invalid invoice status is rejected', (await call('PATCH', '/api/invoice/update_invoice', { token: admin, body: { _id: newInv._id, status: 'maybe' } })).status === 400);
+	check('client cannot mark their own invoice paid', (await call('PATCH', '/api/invoice/update_invoice', { token: client, body: { _id: newInv._id, status: 'paid' } })).status === 403);
+
+	// Changing your own password
+	const cpClient = (await call('POST', '/api/auth', { body: { email: 'client@test.com', password: 'pass1234' } })).data.token;
+	check('change password needs the right current password', (await call('POST', '/api/auth/change_password', { token: cpClient, body: { current_password: 'nope', new_password: 'longenough1' } })).status === 400);
+	check('change password rejects short passwords', (await call('POST', '/api/auth/change_password', { token: cpClient, body: { current_password: 'pass1234', new_password: 'short' } })).status === 400);
+	check('change password works', (await call('POST', '/api/auth/change_password', { token: cpClient, body: { current_password: 'pass1234', new_password: 'longenough1' } })).data?.status === true);
+	check('old password stops working, new one works', (await call('POST', '/api/auth', { body: { email: 'client@test.com', password: 'pass1234' } })).status === 401 && (await call('POST', '/api/auth', { body: { email: 'client@test.com', password: 'longenough1' } })).data?.auth === true);
+	check('change password requires being signed in', (await call('POST', '/api/auth/change_password', { body: { current_password: 'a', new_password: 'longenough1' } })).data?.status === false);
 
 	// Errors never leak internals
 	const bad = await call('PATCH', '/api/user/update_user/not-an-id', { token: admin, body: { phone: '1' } });

@@ -69,6 +69,10 @@ async function waitFor(server, text, ms = 15000) {
 	const onRota = Object.values(rotas.data.data[0].schedule).flat().map(s => s.email);
 	check('rotas only use active caregivers', !onRota.includes('kwame.mensah@example.com') && !onRota.includes('hannah.price@example.com'));
 
+	const allInv = (await call('GET', '/api/invoice/show_invoices', { token: admin.token })).data.data;
+	const today = new Date().toISOString().slice(0, 10);
+	check('sample invoices include paid, unpaid and overdue', allInv.some(i => i.status === 'paid') && allInv.some(i => i.status === 'unpaid' && i.due_date >= today) && allInv.some(i => i.status === 'unpaid' && i.due_date < today));
+	check('demo accounts cannot change their password', (await call('POST', '/api/auth/change_password', { token: client.token, body: { current_password: 'demo-pass', new_password: 'something-new' } })).status === 403);
 	check('regular sign-in works with the demo password', (await call('POST', '/api/auth', { body: { email: 'client@example.com', password: 'demo-pass' } })).data?.auth === true);
 	const clientId = myInvoices && (await call('GET', '/api/user/show_user_by_email/client@example.com', { token: admin.token })).data.data._id;
 	check('demo sign-in accounts cannot be deactivated', (await call('PATCH', `/api/user/set_status/${clientId}`, { token: admin.token, body: { status: 'in-active' } })).status === 403);

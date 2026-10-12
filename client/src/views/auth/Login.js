@@ -47,6 +47,7 @@ function Login() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(null);
   const [slow, setSlow] = useState(false);
+  const [forgot, setForgot] = useState(false);
   const history = useHistory();
   const { getLoggedIn } = useAuth();
 
@@ -169,7 +170,26 @@ function Login() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <label htmlFor="login-password">Password</label>
+            <div className="ecms-login__pwrow">
+              <label htmlFor="login-password">Password</label>
+              <button
+                type="button"
+                className="ecms-login__forgot"
+                aria-expanded={forgot}
+                onClick={() => setForgot(!forgot)}
+              >
+                Forgot password?
+              </button>
+            </div>
+            {forgot && (
+              <p className="ecms-login__forgot-help" role="status">
+                {DEMO
+                  ? "The demo accounts all use the password ecms-demo. "
+                  : ""}
+                Ask your care administrator to reset it. They'll give you a
+                temporary password, which you can change from your profile.
+              </p>
+            )}
             <input
               id="login-password"
               type="password"

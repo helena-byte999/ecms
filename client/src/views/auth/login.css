@@ -214,6 +214,35 @@
   border-color: var(--teal);
   box-shadow: var(--focus);
 }
+.ecms-login__pwrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ecms-login__forgot {
+  margin: 0 0 7px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal-dark);
+  cursor: pointer;
+}
+.ecms-login__forgot:hover {
+  text-decoration: underline;
+}
+.ecms-login__forgot-help {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--mist);
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
 .ecms-login button[type="submit"] {
   display: inline-flex;
   align-items: center;

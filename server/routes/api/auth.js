@@ -82,6 +82,35 @@ router.post('/demo', loginLimiter, async (req, res) => {
 });
 
 
+//@routes POST api/auth/change_password
+//@desc Change your own password: { current_password, new_password }
+//@access Private (rate-limited like sign-in, since it checks a password)
+router.post('/change_password', loginLimiter, auth, async (req, res) => {
+    const { current_password, new_password } = req.body;
+    if (!current_password || !new_password) return res.status(400).send({ status: false, msg: 'Enter your current and new password.' });
+    if (String(new_password).length < 8) return res.status(400).send({ status: false, msg: 'New password must be at least 8 characters.' });
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user || user.status === 'in-active') return res.status(403).send({ status: false, msg: 'Account unavailable.' });
+        if (demo.enabled() && demo.isDemoAccount(user)) {
+            return res.status(403).send({ status: false, msg: "Demo accounts keep their password so the next visitor can sign in." });
+        }
+        if (!(await bcrypt.compare(String(current_password), user.password))) {
+            return res.status(400).send({ status: false, msg: 'Your current password is incorrect.' });
+        }
+        if (await bcrypt.compare(String(new_password), user.password)) {
+            return res.status(400).send({ status: false, msg: 'Choose a password different from your current one.' });
+        }
+        user.password = await bcrypt.hash(String(new_password), 10);
+        await user.save();
+        res.status(200).send({ status: true, msg: 'Password changed.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: false, msg: 'Something went wrong. Please try again.' });
+    }
+});
+
+
 //@routes GET api/auth/user
 //@desc Get user data
 //@access Private

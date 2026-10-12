@@ -10,6 +10,8 @@ import {
   IconButton,
   formatMoney,
   SortHeader,
+  InvoiceStatus,
+  formatDate,
 } from "components/ui/ListUI.js";
 import { FiEye } from "react-icons/fi";
 import Notifications from "components/Notification/Notification";
@@ -101,8 +103,11 @@ function Invoices() {
                       <SortHeader field="description" sort={sort} onSort={sortBy}>
                         Description
                       </SortHeader>
-                      <SortHeader field="date" sort={sort} onSort={sortBy}>
-                        Date
+                      <SortHeader field="due" sort={sort} onSort={sortBy}>
+                        Due
+                      </SortHeader>
+                      <SortHeader field="status" sort={sort} onSort={sortBy}>
+                        Status
                       </SortHeader>
                       <SortHeader field="amount" sort={sort} onSort={sortBy}>
                         Amount
@@ -113,7 +118,7 @@ function Invoices() {
                   <tbody>
                     {invoices.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="ecms-empty">
+                        <td colSpan={5} className="ecms-empty">
                           No invoices yet.
                         </td>
                       </tr>
@@ -125,8 +130,11 @@ function Invoices() {
                             {items.description || items.type || "Invoice"}
                           </strong>
                         </td>
-                        <td data-label="Date">
-                          <DateCell value={items.date_created} />
+                        <td data-label="Due">
+                          <DateCell value={items.due_date} />
+                        </td>
+                        <td data-label="Status">
+                          <InvoiceStatus invoice={items} />
                         </td>
                         <td className="ecms-amount" data-label="Amount">
                           {formatMoney(items.amount)}
@@ -193,6 +201,8 @@ function Invoices() {
                           <th>Email</th>
                           <th>Date</th>
                           <th>Amount</th>
+                          <th>Due</th>
+                          <th>Status</th>
                           <th>Description</th>
                         </tr>
                       </thead>
@@ -205,6 +215,8 @@ function Invoices() {
                             ).toLocaleDateString()}
                           </td>
                           <td className="ecms-amount">{formatMoney(current.amount)}</td>
+                          <td>{formatDate(current.due_date)}</td>
+                          <td><InvoiceStatus invoice={current} /></td>
                           <td>{current.description}</td>
                         </tr>
                       </tbody>

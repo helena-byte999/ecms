@@ -86,6 +86,23 @@ export function formatMoney(value) {
   }
 }
 
+// "paid", "unpaid", or "overdue" (unpaid and past its due date)
+export function invoiceState(inv) {
+  if (inv.status === "paid") return "paid";
+  const today = new Date().toISOString().slice(0, 10);
+  return inv.due_date && inv.due_date < today ? "overdue" : "unpaid";
+}
+
+export function InvoiceStatus({ invoice }) {
+  const state = invoiceState(invoice);
+  const kind = { paid: "ok", unpaid: "warn", overdue: "bad" }[state];
+  return (
+    <span className={"ecms-status ecms-status--" + kind}>
+      {state[0].toUpperCase() + state.slice(1)}
+    </span>
+  );
+}
+
 export function DateCell({ value, to }) {
   return (
     <span className="ecms-date">

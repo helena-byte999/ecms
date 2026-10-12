@@ -17,6 +17,7 @@ import {
   Row,
   Col,
 } from "reactstrap";
+import ChangePassword from "components/ui/ChangePassword.js";
 
 function User() {
   const { userDetail, setUserDetail } = useAuth();
@@ -70,6 +71,7 @@ function User() {
                 </div>
               </CardBody>
             </Card>
+            <ChangePassword />
           </Col>
           <Col md="8">
             <Card className="card-user">

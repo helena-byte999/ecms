@@ -2,8 +2,6 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { invoice_api, user } from "../../data/api";
 import { BsArrowBarLeft } from "react-icons/bs";
-import { FaFileInvoice } from "react-icons/fa";
-import logo from "../../assets/img/logo.png";
 import {
   ListHeader,
   PersonCell,
@@ -11,8 +9,11 @@ import {
   IconButton,
   formatMoney,
   SortHeader,
+  InvoiceStatus,
+  formatDate,
 } from "components/ui/ListUI.js";
-import { FiEye } from "react-icons/fi";
+import { FiCheckCircle, FiEye, FiRotateCcw } from "react-icons/fi";
+import Brand from "components/Brand.js";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
 
@@ -123,9 +124,10 @@ function Invoices() {
             msg: "Invoice Added Successfully.",
             type: "success",
           });
-          setInvoices([...invoices, res.data.data]);
-          setPagination({ ...pagination, count: pagination.count + 1 });
+          setInvoices([res.data.data, ...invoices]);
+          setPagination((p) => ({ ...p, count: (p.count || 0) + 1 }));
           setCurrent({});
+          setUserFound({});
           e.target.reset();
         } else {
           setNotificationDetails({
@@ -138,7 +140,7 @@ function Invoices() {
       .catch((error) => {
         if (error.response) {
           setNotificationDetails({
-            msg: error.response.data.message,
+            msg: error.response.data.msg || "Couldn't add the invoice.",
             type: "danger",
           });
           setNotificationStatus(true);
@@ -149,27 +151,37 @@ function Invoices() {
       });
   }
 
-  // async function updateInvoice(e) {
-  //   e.preventDefault();
-  //   await axios.patch(invoice_api.updateInvoice + "/" + current._id, current).then((res) => {
-  //     if (res.data.status) {
-  //       setNotificationDetails({ msg: "Invoice Updated Successfully.", type: "success" });
-  //     }
-  //     else {
-  //       setNotificationDetails({ msg: "Error updating Invoice.", type: "danger" });
-  //     }
-  //     setNotificationStatus(true);
-  //   }).catch((error) => {
-  //     if (error.response) {
-  //       setNotificationDetails({ msg: error.response.data.message, type: "danger" });
-  //       setNotificationStatus(true);
-  //     } else {
-  //       setNotificationDetails({ msg: "Network Error!", type: "danger" });
-  //       setNotificationStatus(true);
-  //     }
+  // Save an invoice (edit form) or just change its status (list button)
+  async function saveInvoice(changes, doneMsg) {
+    try {
+      const res = await axios.patch(invoice_api.updateInvoice, changes);
+      if (res.data.status) {
+        const saved = res.data.data;
+        setInvoices((list) => list.map((i) => (i._id === saved._id ? saved : i)));
+        setCurrent((c) => (c._id === saved._id ? saved : c));
+        setNotificationDetails({ msg: doneMsg, type: "success" });
+      } else {
+        setNotificationDetails({ msg: res.data.msg || "Couldn't save the invoice.", type: "danger" });
+      }
+    } catch (error) {
+      setNotificationDetails({
+        msg: error.response?.data?.msg || "Couldn't reach the server.",
+        type: "danger",
+      });
+    }
+    setNotificationStatus(true);
+  }
 
-  //   });
-  // }
+  function updateInvoice(e) {
+    e.preventDefault();
+    const { _id, amount, type, description, due_date, status } = current;
+    saveInvoice({ _id, amount, type, description, due_date, status }, "Invoice saved.");
+  }
+
+  function togglePaid(inv) {
+    const status = inv.status === "paid" ? "unpaid" : "paid";
+    saveInvoice({ _id: inv._id, status }, status === "paid" ? "Marked as paid." : "Marked as unpaid.");
+  }
 
   function sortBy(next) {
     setSort(next);
@@ -209,8 +221,11 @@ function Invoices() {
                       <SortHeader field="description" sort={sort} onSort={sortBy}>
                         Description
                       </SortHeader>
-                      <SortHeader field="date" sort={sort} onSort={sortBy}>
-                        Date
+                      <SortHeader field="due" sort={sort} onSort={sortBy}>
+                        Due
+                      </SortHeader>
+                      <SortHeader field="status" sort={sort} onSort={sortBy}>
+                        Status
                       </SortHeader>
                       <SortHeader field="amount" sort={sort} onSort={sortBy}>
                         Amount
@@ -221,7 +236,7 @@ function Invoices() {
                   <tbody>
                     {invoices.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="ecms-empty">
+                        <td colSpan={6} className="ecms-empty">
                           No invoices found.
                         </td>
                       </tr>
@@ -234,8 +249,11 @@ function Invoices() {
                         <td className="ecms-muted" data-label="Description">
                           {items.description || items.type || "–"}
                         </td>
-                        <td data-label="Date">
-                          <DateCell value={items.date_created} />
+                        <td data-label="Due">
+                          <DateCell value={items.due_date} />
+                        </td>
+                        <td data-label="Status">
+                          <InvoiceStatus invoice={items} />
                         </td>
                         <td className="ecms-amount" data-label="Amount">
                           {formatMoney(items.amount)}
@@ -246,6 +264,12 @@ function Invoices() {
                               setCurrent(items);
                             }}>
                             <FiEye />
+                          </IconButton>
+                          <IconButton
+                            label={items.status === "paid" ? "Mark as unpaid" : "Mark as paid"}
+                            onClick={() => togglePaid(items)}
+                          >
+                            {items.status === "paid" ? <FiRotateCcw /> : <FiCheckCircle />}
                           </IconButton>
                         </td>
                       </tr>
@@ -299,7 +323,7 @@ function Invoices() {
                         <label>Email</label>
                         <Input
                           defaultValue={current.email}
-                          placeholder="abdul@gmail.com"
+                          placeholder="Person's email"
                           type="text"
                           onChange={(e) =>
                             setCurrent({ ...current, email: e.target.value })
@@ -346,6 +370,32 @@ function Invoices() {
                           placeholder="0.00"
                           type="number"
                         />
+                      </FormGroup>
+                    </Col>
+                    <Col className="pr-1" md="6">
+                      <FormGroup>
+                        <label htmlFor="inv-type">Type</label>
+                        <Input
+                          id="inv-type"
+                          placeholder="e.g. Monthly care"
+                          type="text"
+                          onChange={(e) =>
+                            setCurrent({ ...current, type: e.target.value })
+                          }
+                        />
+                      </FormGroup>
+                    </Col>
+                    <Col className="pl-1" md="6">
+                      <FormGroup>
+                        <label htmlFor="inv-due">Due date</label>
+                        <Input
+                          id="inv-due"
+                          type="date"
+                          onChange={(e) =>
+                            setCurrent({ ...current, due_date: e.target.value })
+                          }
+                        />
+                        <small className="ecms-fieldhint">Leave empty for 14 days from today.</small>
                       </FormGroup>
                     </Col>
                     <Col md="12">
@@ -399,51 +449,107 @@ function Invoices() {
               <BsArrowBarLeft size={20} /> Back to Invoices
             </button>
 
-            <Row>
-              <Col col={12}>
-                <Card className="card-user">
+            <Card className="ecms-invoice">
+              <CardBody>
+                <div className="ecms-invoice__head">
+                  <Brand compact />
+                  <div>
+                    <h2>Invoice</h2>
+                    <InvoiceStatus invoice={current} />
+                  </div>
+                </div>
+                <dl className="ecms-invoice__meta">
+                  <div>
+                    <dt>Billed to</dt>
+                    <dd>{current.email}</dd>
+                  </div>
+                  <div>
+                    <dt>Issued</dt>
+                    <dd>{formatDate(current.date_created)}</dd>
+                  </div>
+                  <div>
+                    <dt>{current.status === "paid" ? "Paid on" : "Due"}</dt>
+                    <dd>
+                      {formatDate(
+                        current.status === "paid" ? current.paid_at : current.due_date,
+                      )}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Amount</dt>
+                    <dd className="ecms-amount">{formatMoney(current.amount)}</dd>
+                  </div>
+                </dl>
+
+                <Form onSubmit={updateInvoice}>
                   <Row>
-                    <Col md={9} style={{ padding: "20px" }}>
-                      <img src={logo} alt="cms logo" />
-                      <h3 style={{ paddingLeft: "10px" }}>
-                        {" "}
-                        <FaFileInvoice size={30} /> INVOICE
-                      </h3>
+                    <Col className="pr-1" md="4">
+                      <FormGroup>
+                        <label htmlFor="edit-amount">Amount</label>
+                        <Input
+                          id="edit-amount"
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={current.amount ?? ""}
+                          onChange={(e) => setCurrent({ ...current, amount: e.target.value })}
+                        />
+                      </FormGroup>
                     </Col>
-                    <Col style={{ padding: "10px" }}>
-                      <h4 style={{ marginTop: "10px", marginRight: "10px" }}>
-                        Elderly Care Management System
-                      </h4>
+                    <Col className="px-1" md="4">
+                      <FormGroup>
+                        <label htmlFor="edit-due">Due date</label>
+                        <Input
+                          id="edit-due"
+                          type="date"
+                          value={current.due_date || ""}
+                          onChange={(e) => setCurrent({ ...current, due_date: e.target.value })}
+                        />
+                      </FormGroup>
+                    </Col>
+                    <Col className="pl-1" md="4">
+                      <FormGroup>
+                        <label htmlFor="edit-status">Status</label>
+                        <Input
+                          id="edit-status"
+                          type="select"
+                          value={current.status || "unpaid"}
+                          onChange={(e) => setCurrent({ ...current, status: e.target.value })}
+                        >
+                          <option value="unpaid">Unpaid</option>
+                          <option value="paid">Paid</option>
+                        </Input>
+                      </FormGroup>
+                    </Col>
+                    <Col className="pr-1" md="4">
+                      <FormGroup>
+                        <label htmlFor="edit-type">Type</label>
+                        <Input
+                          id="edit-type"
+                          type="text"
+                          value={current.type || ""}
+                          onChange={(e) => setCurrent({ ...current, type: e.target.value })}
+                        />
+                      </FormGroup>
+                    </Col>
+                    <Col className="pl-1" md="8">
+                      <FormGroup>
+                        <label htmlFor="edit-description">Description</label>
+                        <Input
+                          id="edit-description"
+                          type="text"
+                          value={current.description || ""}
+                          onChange={(e) => setCurrent({ ...current, description: e.target.value })}
+                        />
+                      </FormGroup>
                     </Col>
                   </Row>
-
-                  <CardBody>
-                    <Table responsive>
-                      <thead>
-                        <tr>
-                          <th>Email</th>
-                          <th>Date</th>
-                          <th>Amount</th>
-                          <th>Description</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td>{current.email}</td>
-                          <td>
-                            {new Date(
-                              current.date_created,
-                            ).toLocaleDateString()}
-                          </td>
-                          <td className="ecms-amount">{formatMoney(current.amount)}</td>
-                          <td>{current.description}</td>
-                        </tr>
-                      </tbody>
-                    </Table>
-                  </CardBody>
-                </Card>
-              </Col>
-            </Row>
+                  <Button color="primary" type="submit">
+                    Save changes
+                  </Button>
+                </Form>
+              </CardBody>
+            </Card>
           </>
         ) : null}
       </div>

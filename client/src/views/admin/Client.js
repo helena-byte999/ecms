@@ -11,6 +11,8 @@ import {
 } from "components/ui/ListUI.js";
 import { FiEye } from "react-icons/fi";
 import AccountStatusButton from "components/ui/AccountStatusButton.js";
+import ContractsCard from "components/ui/ContractsCard.js";
+import { useHistory } from "react-router-dom";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
 
@@ -30,6 +32,7 @@ import {
 } from "reactstrap";
 
 function Clients() {
+  const history = useHistory();
   const [clients, setClients] = useState([]);
   const [mode, setMode] = useState("all");
   const [current, setCurrent] = useState({});
@@ -119,35 +122,25 @@ function Clients() {
 
   async function updateClient(e) {
     e.preventDefault();
-    await axios
-      .patch(user.updateUser + "/" + current._id, current)
-      .then((res) => {
-        if (res.data.status) {
-          setNotificationDetails({
-            msg: "Clients Updated Successfully.",
-            type: "success",
-          });
-        } else {
-          setNotificationDetails({
-            msg: "Error updating Client.",
-            type: "danger",
-          });
-        }
-        setNotificationStatus(true);
-      })
-      .catch((error) => {
-        if (error.response) {
-          setNotificationDetails({
-            msg: error.response.data.message,
-            type: "danger",
-          });
-          setNotificationStatus(true);
-        } else {
-          setNotificationDetails({ msg: "Network Error!", type: "danger" });
-          setNotificationStatus(true);
-        }
+    try {
+      const res = await axios.patch(user.updateUser + "/" + current._id, current);
+      if (res.data.status) {
+        const saved = res.data.data;
+        setClients((list) => list.map((u) => (u._id === saved._id ? saved : u)));
+        setCurrent({ ...saved, password: "" });
+        setNotificationDetails({ msg: "Changes saved.", type: "success" });
+      } else {
+        setNotificationDetails({ msg: res.data.msg || "Couldn't save the changes.", type: "danger" });
+      }
+    } catch (error) {
+      setNotificationDetails({
+        msg: error.response?.data?.msg || "Couldn't reach the server.",
+        type: "danger",
       });
+    }
+    setNotificationStatus(true);
   }
+
   function statusKind(status) {
     if (status === "active") return "ok";
     if (status === "in-active") return "bad";
@@ -309,7 +302,6 @@ function Clients() {
                         <label>First Name</label>
                         <Input
                           defaultValue={current.first_name}
-                          placeholder="John"
                           type="text"
                           onChange={(e) =>
                             setCurrent({
@@ -325,7 +317,6 @@ function Clients() {
                         <label>Last Name</label>
                         <Input
                           defaultValue={current.last_name}
-                          placeholder="Doe"
                           type="text"
                           onChange={(e) =>
                             setCurrent({
@@ -346,7 +337,6 @@ function Clients() {
                           onChange={(e) =>
                             setCurrent({ ...current, email: e.target.value })
                           }
-                          placeholder="Email: ena@gmail.com"
                           type="text"
                         />
                       </FormGroup>
@@ -503,7 +493,6 @@ function Clients() {
                         <label>Name</label>
                         <Input
                           defaultValue={current?.NextOfKin?.name}
-                          placeholder="John"
                           type="text"
                           onChange={(e) =>
                             setCurrent({
@@ -522,7 +511,6 @@ function Clients() {
                         <label>Phone</label>
                         <Input
                           defaultValue={current?.NextOfKin?.phone}
-                          placeholder="090..."
                           type="text"
                           onChange={(e) =>
                             setCurrent({
@@ -541,7 +529,6 @@ function Clients() {
                         <label>Address</label>
                         <Input
                           defaultValue={current?.NextOfKin?.address}
-                          placeholder="98 Ahmadu Zubairu Way"
                           type="text"
                           onChange={(e) =>
                             setCurrent({
@@ -597,7 +584,6 @@ function Clients() {
                         <label>Name</label>
                         <Input
                           defaultValue={current?.EmergencyContact?.name}
-                          placeholder="John Doe"
                           type="text"
                           onChange={(e) =>
                             setCurrent({
@@ -616,7 +602,6 @@ function Clients() {
                         <label>Phone</label>
                         <Input
                           defaultValue={current?.EmergencyContact?.phone}
-                          placeholder="090....."
                           type="text"
                           onChange={(e) =>
                             setCurrent({
@@ -635,7 +620,6 @@ function Clients() {
                         <label>Address</label>
                         <Input
                           defaultValue={current?.EmergencyContact?.address}
-                          placeholder="98 Ahmadu Zubairu Way"
                           type="text"
                           onChange={(e) =>
                             setCurrent({
@@ -749,7 +733,6 @@ function Clients() {
                             <label>First Name</label>
                             <Input
                               defaultValue={current.first_name}
-                              placeholder="John"
                               type="text"
                               onChange={(e) =>
                                 setCurrent({
@@ -765,7 +748,6 @@ function Clients() {
                             <label>Last Name</label>
                             <Input
                               defaultValue={current.last_name}
-                              placeholder="Doe"
                               type="text"
                               onChange={(e) =>
                                 setCurrent({
@@ -789,7 +771,6 @@ function Clients() {
                                   email: e.target.value,
                                 })
                               }
-                              placeholder="Email: ena@gmail.com"
                               type="text"
                             />
                           </FormGroup>
@@ -839,13 +820,7 @@ function Clients() {
                               }
                             >
                               <option>{current.status}</option>
-                              {[
-                                "active",
-                                "suspended",
-                                "on-leave",
-                                "suspended",
-                                "in-active",
-                              ].map((stat, key) => {
+                              {["active", "on-leave", "in-active"].map((stat, key) => {
                                 return (
                                   <>
                                     {current.status !== stat ? (
@@ -990,7 +965,6 @@ function Clients() {
                             <label>Name</label>
                             <Input
                               defaultValue={current?.NextOfKin?.name}
-                              placeholder="John"
                               type="text"
                               onChange={(e) =>
                                 setCurrent({
@@ -1009,7 +983,6 @@ function Clients() {
                             <label>Phone</label>
                             <Input
                               defaultValue={current?.NextOfKin?.phone}
-                              placeholder="090..."
                               type="text"
                               onChange={(e) =>
                                 setCurrent({
@@ -1028,7 +1001,6 @@ function Clients() {
                             <label>Address</label>
                             <Input
                               defaultValue={current?.NextOfKin?.address}
-                              placeholder="98 Ahmadu Zubairu Way"
                               type="text"
                               onChange={(e) =>
                                 setCurrent({
@@ -1092,7 +1064,6 @@ function Clients() {
                             <label>Name</label>
                             <Input
                               defaultValue={current?.EmergencyContact?.name}
-                              placeholder="John Doe"
                               type="text"
                               onChange={(e) =>
                                 setCurrent({
@@ -1111,7 +1082,6 @@ function Clients() {
                             <label>Phone</label>
                             <Input
                               defaultValue={current?.EmergencyContact?.phone}
-                              placeholder="090....."
                               type="text"
                               onChange={(e) =>
                                 setCurrent({
@@ -1130,7 +1100,6 @@ function Clients() {
                             <label>Address</label>
                             <Input
                               defaultValue={current?.EmergencyContact?.address}
-                              placeholder="98 Ahmadu Zubairu Way"
                               type="text"
                               onChange={(e) =>
                                 setCurrent({
@@ -1189,9 +1158,12 @@ function Clients() {
                       <Row>
                         <Col md="12">
                           <FormGroup>
-                            <label>Password</label>
+                            <label htmlFor="new-password">Set a new password</label>
                             <Input
-                              placeholder="*****"
+                              id="new-password"
+                              placeholder="Leave blank to keep the current password"
+                              autoComplete="new-password"
+                              value={current.password || ""}
                               type="password"
                               onChange={(e) =>
                                 setCurrent({
@@ -1200,6 +1172,10 @@ function Clients() {
                                 })
                               }
                             />
+                            <small className="ecms-fieldhint">
+                              At least 8 characters. Share it with them
+                              privately; they can change it from their profile.
+                            </small>
                           </FormGroup>
                         </Col>
                       </Row>
@@ -1211,7 +1187,7 @@ function Clients() {
                             type="submit"
                             onClick={updateClient}
                           >
-                            update Details
+                            Save changes
                           </Button>
                         </div>
                       </Row>
@@ -1220,15 +1196,12 @@ function Clients() {
                 </Card>
               </Col>
               <Col md={4}>
-                <Card className="card-user">
-                  <div style={{ textAlign: "center" }}>
-                    <h4 style={{ marginTop: "10px" }}>
-                      Elderly Monitoring Contract
-                    </h4>
-                  </div>
-
-                  <CardBody></CardBody>
-                </Card>
+                <ContractsCard
+                  contracts={current.Contracts || []}
+                  onAdd={() =>
+                    history.push("/admin/contract", { addFor: current.email })
+                  }
+                />
               </Col>
             </Row>
           </>

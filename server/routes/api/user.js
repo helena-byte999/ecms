@@ -8,6 +8,7 @@ const { auth, requireRole, selfOrAdmin } = require('../../middleware/auth');
 // User Model
 const Users = require('../../models/User');
 const Invoice = require('../../models/Invoice');
+const Schedule = require('../../models/Schedule');
 const { searchFilter, pageOf, sortOf, collation } = require('../../utils/search');
 const demo = require('../../demo');
 
@@ -24,30 +25,77 @@ const BY_NAME = { first_name: 1, last_name: 1 };
 //@routes PUT api/user/editProfile
 //@desc update user
 //@response - status: true or false | error
+// Fields an admin may change on a person. Role is fixed after creation; status
+// can be active / on-leave / in-active (in-active blocks sign-in, like Deactivate).
+const EDITABLE = ['first_name', 'last_name', 'email', 'phone', 'address', 'dob', 'description', 'staff_type', 'status', 'Medical', 'NextOfKin', 'EmergencyContact', 'Contracts', 'password'];
+const REQUIRED = ['first_name', 'last_name', 'email', 'phone', 'address', 'dob'];
+const STATUSES = ['active', 'on-leave', 'in-active'];
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+//@routes PATCH api/user/update_user/:id
+//@desc Update a person's details (admin)
+//@response - status: true, data: updated user | status: false, msg
 router.patch('/update_user/:id', auth, requireRole('admin'), async (req, res) => {
 	const { id } = req.params;
-
 	try {
-		let data = req.body;
+		const existing = await Users.findById(id);
+		if (!existing) return res.status(404).send({ status: false, msg: 'Person not found.' });
+
+		const data = {};
+		for (const key of EDITABLE) if (req.body[key] !== undefined) data[key] = req.body[key];
+
 		// keep the shared demo logins working for the next visitor
-		if (demo.enabled() && demo.isDemoAccount(await Users.findById(id).select('email'))) {
+		if (demo.enabled() && demo.isDemoAccount(existing)) {
 			delete data.email;
-			delete data.role;
 			delete data.status;
 			delete data.password;
 		}
-		if (data.password) {
-			const salt = await bcrypt.genSalt(10);
-			data.password = await bcrypt.hash(data.password, salt);
+
+		for (const key of REQUIRED) {
+			if (key in data && !String(data[key] ?? '').trim()) {
+				return res.status(400).send({ status: false, msg: `${key.replace('_', ' ')} can't be empty.` });
+			}
+		}
+		if ('status' in data) {
+			if (!STATUSES.includes(data.status)) return res.status(400).send({ status: false, msg: 'Status must be active, on-leave or in-active.' });
+			if (data.status !== 'active' && String(existing._id) === String(req.currentUser._id)) {
+				return res.status(400).send({ status: false, msg: "You can't change your own status." });
+			}
+		}
+		if ('email' in data) {
+			data.email = String(data.email).trim().toLowerCase();
+			if (!EMAIL.test(data.email)) return res.status(400).send({ status: false, msg: 'Enter a valid email address.' });
+			if (data.email !== existing.email && await Users.exists({ email: data.email, _id: { $ne: existing._id } })) {
+				return res.status(400).send({ status: false, msg: 'Another person already uses that email.' });
+			}
+		}
+		// password: blank means "keep the current one"
+		if (!data.password) delete data.password;
+		else if (String(data.password).length < 8) return res.status(400).send({ status: false, msg: 'New password must be at least 8 characters.' });
+		else data.password = await bcrypt.hash(String(data.password), await bcrypt.genSalt(10));
+
+		const user = await Users.findByIdAndUpdate(id, data, { new: true }).select('-password');
+
+		// invoices and rotas refer to people by email and name, so keep them in step
+		const emailChanged = data.email && data.email !== existing.email;
+		const nameChanged = (data.first_name && data.first_name !== existing.first_name) || (data.last_name && data.last_name !== existing.last_name);
+		if (emailChanged) await Invoice.updateMany({ email: existing.email }, { email: user.email });
+		if (emailChanged || nameChanged) {
+			const name = `${user.first_name} ${user.last_name}`;
+			const schedules = await Schedule.find({});
+			for (const sch of schedules) {
+				let touched = false;
+				const days = sch.schedule && typeof sch.schedule === 'object' ? sch.schedule : {};
+				for (const day of Object.keys(days)) {
+					for (const slot of days[day] || []) {
+						if (slot.email === existing.email) { slot.email = user.email; slot.name = name; touched = true; }
+					}
+				}
+				if (touched) { sch.markModified('schedule'); await sch.save(); }
+			}
 		}
 
-		const user = await Users.findByIdAndUpdate(id, req.body);
-		console.log(user);
-		if (!user) { return res.status(400).send({ status: false, error: 'Problem with the update query' }); };
-
-		//add change to system
-		res.status(200).send({ status: true, message: "Profile Updated" });
-
+		res.status(200).send({ status: true, message: 'Saved', data: user });
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ msg: 'Something went wrong. Please try again.' });

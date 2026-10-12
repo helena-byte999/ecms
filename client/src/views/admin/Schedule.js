@@ -256,7 +256,7 @@ function Schedules() {
               <CardHeader>
                 <Row style={{ marginBottom: "-20px" }}>
                   <Col>
-                    <CardTitle tag="h5">Generate Schedule</CardTitle>
+                    <CardTitle tag="h5">Generate rota</CardTitle>
                   </Col>
                   <Col md={3}>
                     <button
@@ -281,24 +281,30 @@ function Schedules() {
                   <Row>
                     <Col className="pr-1" md="3">
                       <FormGroup>
-                        <label>Start Date</label>
+                        <label htmlFor="rota-start">Any day in the week</label>
                         <Input
+                          id="rota-start"
                           value={date.first}
                           type="date"
                           onChange={(e) => getFirstAndLast(e.target.value)}
                         />
+                        <small className="ecms-fieldhint">
+                          The rota covers its Monday–Sunday week.
+                        </small>
                       </FormGroup>
                     </Col>
                     <Col className="px-1" md="3">
                       <FormGroup>
-                        <label>End Date</label>
+                        <label>Ends (Sunday)</label>
                         <Input value={date.last} type="date" disabled={true} />
+                        <small className="ecms-fieldhint">Filled in for you.</small>
                       </FormGroup>
                     </Col>
                     <Col className="px-1" md="3">
                       <FormGroup>
-                        <label>Week</label>
+                        <label>Week number</label>
                         <Input value={date.week} type="text" disabled={true} />
+                        <small className="ecms-fieldhint">Filled in for you.</small>
                       </FormGroup>
                     </Col>
                     <Col className="pl-1" md="3">
@@ -314,6 +320,10 @@ function Schedules() {
                             setDate({ ...date, per_day: e.target.value })
                           }
                         />
+                        <small className="ecms-fieldhint">
+                          Every active caregiver is shared out evenly; nobody
+                          works the same day twice.
+                        </small>
                       </FormGroup>
                     </Col>
                   </Row>
