@@ -46,6 +46,7 @@ export const user = {
   showAllContracts: `${BackEnd}/api/user/show_all_contracts`,
   showAllUsers: `${BackEnd}/api/user/show_all_users`,
   showUserByEmail: `${BackEnd}/api/user/show_user_by_email`,
+  setStatus: `${BackEnd}/api/user/set_status`,
 };
 export const authenticate = {
   //takes in token as http cookie

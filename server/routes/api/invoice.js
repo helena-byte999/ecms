@@ -39,7 +39,8 @@ router.get('/show_invoices', auth, requireRole('admin'), async (req, res) => {
 		res.status(200).send({ status: true, data: invoices, count });
 
 	} catch (err) {
-		res.status(400).json({ msg: err });
+		console.error(err);
+		res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
@@ -53,7 +54,8 @@ router.get('/show_invoice/:email', auth, selfOrAdmin, async (req, res) => {
 		res.status(200).send({ status: true, data: invoices, count });
 
 	} catch (err) {
-		res.status(400).json({ msg: err });
+		console.error(err);
+		res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
@@ -70,7 +72,8 @@ router.patch('/update_invoice', auth, requireRole('admin'), async (req, res) => 
 
 	} catch (err) {
 		console.log(err);
-		res.status(400).json({ msg: err });
+		console.error(err);
+		res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 

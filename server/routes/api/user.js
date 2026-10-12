@@ -41,7 +41,8 @@ router.patch('/update_user/:id', auth, requireRole('admin'), async (req, res) =>
 		res.status(200).send({ status: true, message: "Profile Updated" });
 
 	} catch (err) {
-		res.json({ msg: err });
+		console.error(err);
+		res.status(500).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
@@ -78,11 +79,33 @@ router.post('/add_user', auth, requireRole('admin'), async (req, res) => {
 		}
 	} catch (err) {
 		console.log(err);
-		res.status(400).json({ msg: err });
+		console.error(err);
+		res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 
 
 
+});
+
+//@routes PATCH api/user/set_status/:id
+//@desc Deactivate or reactivate an account (records are kept; nothing is deleted)
+//@access Admin
+router.patch('/set_status/:id', auth, requireRole('admin'), async (req, res) => {
+	const { status } = req.body;
+	if (!['active', 'in-active'].includes(status)) {
+		return res.status(400).send({ status: false, msg: 'Status must be active or in-active.' });
+	}
+	if (req.params.id === String(req.currentUser._id)) {
+		return res.status(400).send({ status: false, msg: "You can't deactivate your own account." });
+	}
+	try {
+		const user = await Users.findByIdAndUpdate(req.params.id, { status }, { new: true }).select('-password');
+		if (!user) return res.status(404).send({ status: false, msg: 'User not found.' });
+		res.status(200).send({ status: true, data: user });
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ msg: 'Something went wrong. Please try again.' });
+	}
 });
 
 router.get('/show_users/:role', auth, requireRole('admin'), async (req, res) => {
@@ -95,7 +118,8 @@ router.get('/show_users/:role', auth, requireRole('admin'), async (req, res) => 
 		res.status(200).send({ status: true, data: users, count });
 
 	} catch (err) {
-		res.status(400).json({ msg: err });
+		console.error(err);
+		res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
@@ -108,7 +132,8 @@ router.get('/show_all_users', auth, requireRole('admin'), async (req, res) => {
 		res.status(200).send({ status: true, data: users, count });
 
 	} catch (err) {
-		res.status(400).json({ msg: err });
+		console.error(err);
+		res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
@@ -161,7 +186,8 @@ router.get('/show_all_contracts', auth, requireRole('admin'), async (req, res) =
 		res.status(200).send({ status: true, data: users, count: users.length || 0, noContracts, valid, expired });
 
 	} catch (err) {
-		res.status(400).json({ msg: err });
+		console.error(err);
+		res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
@@ -177,7 +203,8 @@ router.get('/show_user_by_email/:email', auth, selfOrAdmin, async (req, res) => 
 		return res.status(200).send({ status: true, data: users });
 
 	} catch (err) {
-		return res.status(400).json({ msg: err });
+		console.error(err);
+		return res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
@@ -195,7 +222,8 @@ router.get('/get_counts', auth, requireRole('admin'), async (req, res) => {
 		return res.status(200).send({ status: true, data: { users: users.length, contracts, clients } });
 
 	} catch (err) {
-		return res.status(400).json({ msg: err });
+		console.error(err);
+		return res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
@@ -210,7 +238,8 @@ router.get('/get_counts/:email', auth, selfOrAdmin, async (req, res) => {
 		return res.status(200).send({ status: true, data: { invoices, contracts } });
 
 	} catch (err) {
-		return res.status(400).json({ msg: err });
+		console.error(err);
+		return res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
@@ -233,7 +262,8 @@ router.get('/loggedIn', async (req, res) => {
 		//verify token
 
 	} catch (e) {
-		res.status(501).send(e);
+		console.error(e);
+		res.status(500).send({ status: false });
 	}
 });
 

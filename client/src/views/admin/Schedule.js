@@ -91,7 +91,8 @@ function Schedules() {
     let wDate = new Date();
 
     if (f) {
-      wDate = new Date(f);
+      // parse as local midnight; new Date("YYYY-MM-DD") is UTC and shifts the day west of UTC
+      wDate = new Date(f + "T00:00:00");
     }
     let dDay = wDate.getDay() > 0 ? wDate.getDay() : 7;
     let first = wDate.getDate() - dDay + 1;
@@ -102,11 +103,19 @@ function Schedules() {
     var dayNr = Math.ceil((wDate - firstJanuary) / (24 * 60 * 60 * 1000));
     var week = Math.ceil((dayNr + firstJanuary.getDay()) / 7);
 
-    setDate({
-      first: firstDayWeek.toISOString().split("T")[0],
-      last: lastDayWeek.toISOString().split("T")[0],
+    // local calendar date (toISOString would convert to UTC and can shift the day)
+    const ymd = (d) =>
+      [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, "0"),
+        String(d.getDate()).padStart(2, "0"),
+      ].join("-");
+    setDate((d) => ({
+      ...d,
+      first: ymd(firstDayWeek),
+      last: ymd(lastDayWeek),
       week,
-    });
+    }));
   }
 
   async function addSchedule(e) {
@@ -115,14 +124,20 @@ function Schedules() {
       .post(schedule.addSchedule, date)
       .then((res) => {
         if (res.data.status) {
+          const saved = res.data.data;
+          const exists = schedules.some((s) => s._id === saved._id);
           setNotificationDetails({
-            msg: "Schedule Generated Successfully.",
+            msg: `${exists ? "Rota regenerated" : "Rota generated"} for week ${saved.week}: ${res.data.perDay} caregivers per day from ${res.data.caregivers} active.`,
             type: "success",
           });
-          if (Object.keys(res.data.data).length) {
-            setSchedules([res.data.data, ...schedules]);
-            setPagination({ ...pagination, count: pagination.count + 1 });
-          }
+          // regenerating a week replaces its row instead of adding a duplicate
+          setSchedules(
+            exists
+              ? schedules.map((s) => (s._id === saved._id ? saved : s))
+              : [saved, ...schedules],
+          );
+          if (!exists)
+            setPagination((p) => ({ ...p, count: (p.count || 0) + 1 }));
         } else {
           setNotificationDetails({
             msg: "Error Adding Schedule.",
@@ -264,7 +279,7 @@ function Schedules() {
               <CardBody>
                 <Form>
                   <Row>
-                    <Col className="pr-1" md="4">
+                    <Col className="pr-1" md="3">
                       <FormGroup>
                         <label>Start Date</label>
                         <Input
@@ -274,16 +289,31 @@ function Schedules() {
                         />
                       </FormGroup>
                     </Col>
-                    <Col className="px-1" md="4">
+                    <Col className="px-1" md="3">
                       <FormGroup>
                         <label>End Date</label>
                         <Input value={date.last} type="date" disabled={true} />
                       </FormGroup>
                     </Col>
-                    <Col className="pl-1" md="4">
+                    <Col className="px-1" md="3">
                       <FormGroup>
                         <label>Week</label>
                         <Input value={date.week} type="text" disabled={true} />
+                      </FormGroup>
+                    </Col>
+                    <Col className="pl-1" md="3">
+                      <FormGroup>
+                        <label htmlFor="rota-per-day">Caregivers per day</label>
+                        <Input
+                          id="rota-per-day"
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={date.per_day ?? 5}
+                          onChange={(e) =>
+                            setDate({ ...date, per_day: e.target.value })
+                          }
+                        />
                       </FormGroup>
                     </Col>
                   </Row>
@@ -295,7 +325,7 @@ function Schedules() {
                         type="submit"
                         onClick={addSchedule}
                       >
-                        Generate Schedule
+                        Generate rota
                       </Button>
                     </div>
                   </Row>

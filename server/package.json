@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
+		"test": "node test/api.test.js",
 		"start": "node index",
 		"dev": "nodemon index",
 		"build": "npm i"
@@ -15,11 +15,18 @@
 		"bcryptjs": "^2.4.3",
 		"cookie-parser": "^1.4.5",
 		"cors": "^2.8.5",
-		"crypto": "^1.0.1",
 		"dotenv": "^10.0.0",
-		"express": "^4.17.1",
-		"jsonwebtoken": "^8.5.1",
-		"mongoose": "^5.13.2",
-		"nodemon": "^2.0.12"
+		"express": "^4.22.3",
+		"express-rate-limit": "^7.5.1",
+		"helmet": "^7.2.0",
+		"jsonwebtoken": "^9.0.3",
+		"mongoose": "^8.24.5"
+	},
+	"engines": {
+		"node": "22.x"
+	},
+	"devDependencies": {
+		"mongodb-memory-server": "^10.4.3",
+		"nodemon": "^3.1.14"
 	}
 }

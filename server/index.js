@@ -3,8 +3,14 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
+
+// Render and Vercel sit behind a proxy; this lets rate limiting see the real client IP
+app.set('trust proxy', 1);
 
 //Middlewares
+// security headers; the API is called cross-origin from the frontend, so allow that
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(

@@ -8,12 +8,7 @@ const port = process.env.PORT || process.env.LocalPort;
 { process.env.LocalPort === port ? Mongo = process.env.mongoURL : Mongo = process.env.mongoURLProduction; }
 
 //creating an instance of the mongodb connection
-mongoose.connect(Mongo, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useFindAndModify: false,
-    useCreateIndex: true
-})
+mongoose.connect(Mongo)
     .then(() => console.log("MongoDb Connected Successfully!!!"))
     .catch(err => console.log(err));
 

@@ -10,6 +10,7 @@ import {
   SortHeader,
 } from "components/ui/ListUI.js";
 import { FiEye } from "react-icons/fi";
+import AccountStatusButton from "components/ui/AccountStatusButton.js";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
 
@@ -240,6 +241,26 @@ function Clients() {
                           >
                             <FiEye />
                           </IconButton>
+                          <AccountStatusButton
+                            person={items}
+                            onChanged={(updated) => {
+                              setClients((list) =>
+                                list.map((u) => (u._id === updated._id ? updated : u)),
+                              );
+                              setNotificationDetails({
+                                msg:
+                                  updated.status === "in-active"
+                                    ? `${updated.first_name} ${updated.last_name} has been deactivated.`
+                                    : `${updated.first_name} ${updated.last_name} is active again.`,
+                                type: "success",
+                              });
+                              setNotificationStatus(true);
+                            }}
+                            onError={(msg) => {
+                              setNotificationDetails({ msg, type: "danger" });
+                              setNotificationStatus(true);
+                            }}
+                          />
                         </td>
                       </tr>
                     ))}

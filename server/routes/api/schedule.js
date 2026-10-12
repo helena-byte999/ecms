@@ -14,52 +14,53 @@ const SCHEDULE_SORTS = {
 	dates: [['start_date', 1]],
 };
 
+// How many caregivers each day needs unless the admin asks for a different number
+const DEFAULT_PER_DAY = Number(process.env.ROTA_PER_DAY) || 5;
+
+//@routes POST api/schedule/add_schedule
+//@desc Generate (or regenerate) a week's rota from every active caregiver.
+//      Caregivers are dealt round-robin, so shares differ by at most one shift
+//      and nobody is on the same day twice.
 router.post('/add_schedule', auth, requireRole('admin'), async (req, res) => {
 	const { first, last, week } = req.body;
+	if (!first || !last || !week) {
+		return res.status(400).send({ status: false, msg: 'Choose a start date to generate the rota.' });
+	}
 	try {
-
-		let found = await Schedule.findOne({ week, start_date: first });
-
-		let user_randoms = {};
-		let total_shifts = 7;
-		let users = await Users.find({ role: "caregiver", status: "active" }).select("first_name last_name email").limit(7);
-		//shuffle users;
-		users = users
+		const caregivers = await Users.find({ role: 'caregiver', status: 'active' }).select('first_name last_name email');
+		if (caregivers.length === 0) {
+			return res.status(400).send({ status: false, msg: 'Add at least one active caregiver before generating a rota.' });
+		}
+		const shuffled = caregivers
 			.map(value => ({ value, sort: Math.random() }))
 			.sort((a, b) => a.sort - b.sort)
-			.map(({ value }) => value)
+			.map(({ value }) => value);
+		const requested = parseInt(req.body.per_day, 10) || DEFAULT_PER_DAY;
+		const perDay = Math.min(Math.max(requested, 1), shuffled.length);
 
-		if (users.length != 7) {
-			return res.status(400).send({ status: false, msg: "Ensure 7 staffs are active" });
-		}
-		let current = 0;
-		for (var i = 0; i < total_shifts; i++) {
-			let staffs = [];
-			for (var x = 0; x < 5; x++) {
-				staffs.push({ name: users[current].first_name + " " + users[current].last_name, email: users[current].email });
-				current++;
-				if (current == 7) {
-					current = 0;
-				}
+		const rota = {};
+		let next = 0;
+		for (let day = 0; day < 7; day++) {
+			rota[day] = [];
+			for (let slot = 0; slot < perDay; slot++) {
+				const c = shuffled[next % shuffled.length];
+				rota[day].push({ name: `${c.first_name} ${c.last_name}`, email: c.email });
+				next++;
 			}
-			user_randoms[i] = staffs;
-		};
-
-		if (found) {
-			found.schedule = user_randoms;
-			await found.save();
-			return res.status(200).send({ status: true, data: found })
-		} else {
-			const new_schedule = new Schedule({ start_date: first, end_date: last, week, schedule: user_randoms });
-			await new_schedule.save();
-			return res.status(200).send({ status: true, data: new_schedule });
 		}
 
-
-
+		let saved = await Schedule.findOne({ week, start_date: first });
+		if (saved) {
+			saved.schedule = rota;
+			saved.end_date = last;
+			await saved.save();
+		} else {
+			saved = await new Schedule({ start_date: first, end_date: last, week, schedule: rota }).save();
+		}
+		return res.status(200).send({ status: true, data: saved, perDay, caregivers: shuffled.length });
 	} catch (err) {
-		console.log(err);
-		res.status(500).send({ msg: err, status: false });
+		console.error(err);
+		res.status(500).send({ msg: 'Something went wrong. Please try again.', status: false });
 	}
 });
 
@@ -72,7 +73,8 @@ router.get('/show_all_schedules', auth, async (req, res) => {
 		res.status(200).send({ status: true, data: sch, count });
 
 	} catch (err) {
-		res.status(400).json({ msg: err });
+		console.error(err);
+		res.status(400).json({ msg: 'Something went wrong. Please try again.' });
 	}
 });
 
