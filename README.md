@@ -58,7 +58,7 @@ This was a group project. The original team repository is [NabsCodes/ecms](https
 
 ## Running locally
 
-**Prerequisites:** Node.js 18+ and a MongoDB database (local, or a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster).
+**Prerequisites:** Node.js 22 and a MongoDB database (local, or a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster).
 
 ```bash
 # 1. Clone
@@ -89,7 +89,8 @@ npm start                   # opens http://localhost:3000
 | `mongoURLProduction` | MongoDB connection string for production |
 | `jwtSecret` | Secret used to sign JWTs (any long random string) |
 | `FrontEndHost` / `BackEndHost` | Local frontend/backend URLs |
-| `FrontEndHostProduction` | Production frontend URL |
+| `FrontEndHostProduction` | Production frontend URL (also allowed through CORS) |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | On startup, creates the first admin account if none exists. New accounts can only be created by an admin. |
 
 `client/.env`
 

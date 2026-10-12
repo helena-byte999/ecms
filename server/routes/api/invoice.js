@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { auth } = require('../../middleware/auth');
+const { auth, requireRole, selfOrAdmin } = require('../../middleware/auth');
 // Invoice
 const Invoices = require('../../models/Invoice');
 
-router.post('/add_invoice', auth, async (req, res) => {
+router.post('/add_invoice', auth, requireRole('admin'), async (req, res) => {
 	const newInvoice = new Invoices(req.body);
 	try {
 		const invoice = await newInvoice.save();
@@ -21,9 +21,8 @@ router.post('/add_invoice', auth, async (req, res) => {
 });
 
 
-router.get('/show_invoices', auth, async (req, res) => {
+router.get('/show_invoices', auth, requireRole('admin'), async (req, res) => {
 	const { current, search } = req.query;
-	const { role } = req.params;
 	try {
 		let skip = 0;
 		let take = 100; //in the case current page is not specified
@@ -32,7 +31,7 @@ router.get('/show_invoices', auth, async (req, res) => {
 			take = 10;
 		}
 		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
-		let invoices = await Invoices.find({ role }).skip(skip).limit(take);
+		let invoices = await Invoices.find().skip(skip).limit(take);
 		if (!invoices) { res.status(400).send({ status: false, error: 'Problem with the query or invoice not found' }) };
 		res.status(200).send({ status: true, data: invoices, count: invoices.length || 0 });
 
@@ -41,7 +40,7 @@ router.get('/show_invoices', auth, async (req, res) => {
 	}
 });
 
-router.get('/show_invoice/:email', auth, async (req, res) => {
+router.get('/show_invoice/:email', auth, selfOrAdmin, async (req, res) => {
 	const { current, search } = req.query;
 	const { email } = req.params;
 	try {
@@ -64,10 +63,10 @@ router.get('/show_invoice/:email', auth, async (req, res) => {
 //@routes PUT api/update_service/
 //@desc update service 
 //@response - status: true or false | error
-router.patch('/update_invoice', auth, async (req, res) => {
+router.patch('/update_invoice', auth, requireRole('admin'), async (req, res) => {
 	try {
 		const services = await Invoices.findByIdAndUpdate(req.body._id, req.body);
-		if (!services) { res.status(400).send({ status: false, error: 'Problem with the update query' }) };
+		if (!services) { return res.status(400).send({ status: false, error: 'Problem with the update query' }) };
 
 		res.status(200).send({ status: true, msg: "Invoice updated successfully" });
 

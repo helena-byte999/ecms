@@ -50,4 +50,34 @@ async function authDetail(req, res, next) {
 
 }
 
-module.exports = { auth, authDetail };
+// Use after auth: loads the logged-in user and only lets the listed roles through
+function requireRole(...roles) {
+    return async (req, res, next) => {
+        try {
+            const user = await Users.findById(req.user.id).select('-password');
+            if (!user || !roles.includes(user.role)) {
+                return res.status(403).send({ status: false, msg: "You do not have permission to do this" });
+            }
+            req.currentUser = user;
+            next();
+        } catch (e) {
+            res.status(500).send({ status: false, msg: "Server Error" });
+        }
+    };
+}
+
+// Use after auth on /:email routes: admins can see anyone, everyone else only themselves
+async function selfOrAdmin(req, res, next) {
+    try {
+        const user = await Users.findById(req.user.id).select('-password');
+        if (!user || (user.role !== 'admin' && user.email !== req.params.email)) {
+            return res.status(403).send({ status: false, msg: "You do not have permission to do this" });
+        }
+        req.currentUser = user;
+        next();
+    } catch (e) {
+        res.status(500).send({ status: false, msg: "Server Error" });
+    }
+}
+
+module.exports = { auth, authDetail, requireRole, selfOrAdmin };

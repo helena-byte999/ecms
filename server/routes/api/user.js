@@ -3,21 +3,17 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const { auth } = require('../../middleware/auth');
+const { auth, requireRole, selfOrAdmin } = require('../../middleware/auth');
 
 // User Model
 const Users = require('../../models/User');
 const Invoice = require('../../models/Invoice');
 
 
-const port = process.env.PORT || process.env.LocalPort;
-{ process.env.LocalPort === port ? FrontEnd = process.env.FrontEndHost : FrontEnd = process.env.FrontEndHostProduction; }
-
-
 //@routes PUT api/user/editProfile
 //@desc update user
 //@response - status: true or false | error
-router.patch('/update_user/:id', auth, async (req, res) => {
+router.patch('/update_user/:id', auth, requireRole('admin'), async (req, res) => {
 	const { id } = req.params;
 
 	try {
@@ -29,7 +25,7 @@ router.patch('/update_user/:id', auth, async (req, res) => {
 
 		const user = await Users.findByIdAndUpdate(id, req.body);
 		console.log(user);
-		if (!user) { res.status(400).send({ status: false, error: 'Problem with the update query' }); };
+		if (!user) { return res.status(400).send({ status: false, error: 'Problem with the update query' }); };
 
 		//add change to system
 		res.status(200).send({ status: true, message: "Profile Updated" });
@@ -42,13 +38,13 @@ router.patch('/update_user/:id', auth, async (req, res) => {
 //@routes POST api/users/register
 //@desc Register new user
 //@access public
-router.post('/add_user', async (req, res) => {
+router.post('/add_user', auth, requireRole('admin'), async (req, res) => {
 	const { first_name, email, last_name, dob, role, address, phone, password } = req.body;
 	if (email == undefined || first_name == undefined || last_name == undefined || dob == undefined || role == undefined || address == undefined || phone == undefined || password == undefined) {
 		return res.status(400).send({ msg: 'Some fields are empty!' });
 	}
 	try {
-		user = await Users.findOne({ email: email });
+		const user = await Users.findOne({ email: email });
 
 		//if user already exist
 		if (user) { return res.status(400).send({ msg: 'User Already Exist' }); };
@@ -62,10 +58,11 @@ router.post('/add_user', async (req, res) => {
 		newUser.password = await bcrypt.hash(req.body.password || "", salt);
 
 		try {
-			newUser.save(); //save the data to db
+			await newUser.save(); //save the data to db
+			const { password: _hash, ...data } = newUser.toObject();
 			return res
 				.status(200)
-				.send({ msg: 'Account created successfuly!', status: true, data: newUser });
+				.send({ msg: 'Account created successfuly!', status: true, data });
 		} catch (error) {
 			return res.status(500).send({ msg: 'Account Not Created!' });
 		}
@@ -78,7 +75,7 @@ router.post('/add_user', async (req, res) => {
 
 });
 
-router.get('/show_users/:role', auth, async (req, res) => {
+router.get('/show_users/:role', auth, requireRole('admin'), async (req, res) => {
 	const { current, search } = req.query;
 	const { role } = req.params;
 	try {
@@ -98,7 +95,7 @@ router.get('/show_users/:role', auth, async (req, res) => {
 	}
 });
 
-router.get('/show_all_users', auth, async (req, res) => {
+router.get('/show_all_users', auth, requireRole('admin'), async (req, res) => {
 	const { current, search } = req.query;
 	try {
 		let skip = 0;
@@ -136,7 +133,7 @@ function checkDates(start1, end1) {
 }
 
 
-router.get('/show_all_contracts', auth, async (req, res) => {
+router.get('/show_all_contracts', auth, requireRole('admin'), async (req, res) => {
 	const { current, search } = req.query;
 	try {
 		let noContracts = [];
@@ -173,7 +170,7 @@ router.get('/show_all_contracts', auth, async (req, res) => {
 
 
 
-router.get('/show_user_by_email/:email', auth, async (req, res) => {
+router.get('/show_user_by_email/:email', auth, selfOrAdmin, async (req, res) => {
 	const { email } = req.params;
 	try {
 		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
@@ -187,7 +184,7 @@ router.get('/show_user_by_email/:email', auth, async (req, res) => {
 });
 
 
-router.get('/get_counts', auth, async (req, res) => {
+router.get('/get_counts', auth, requireRole('admin'), async (req, res) => {
 	try {
 		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
 		let users = await Users.find();
@@ -204,18 +201,17 @@ router.get('/get_counts', auth, async (req, res) => {
 	}
 });
 
-router.get('/get_counts/:email', auth, async (req, res) => {
+router.get('/get_counts/:email', auth, selfOrAdmin, async (req, res) => {
 	try {
 		const { email } = req.params;
 		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
 		let invoices = await Invoice.countDocuments({ email });
-		let client = await Users.find({ email });
+		let client = await Users.findOne({ email });
 		let contracts = client?.Contracts?.length || 0;
 
 		return res.status(200).send({ status: true, data: { invoices, contracts } });
 
 	} catch (err) {
-		conso;
 		return res.status(400).json({ msg: err });
 	}
 });

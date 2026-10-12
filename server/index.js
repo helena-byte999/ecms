@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const cors = require('cors');
@@ -15,6 +16,7 @@ app.use(
 
 //db connection
 const connection = require('./db');
+require('./seedAdmin')(connection);
 
 //Routes
 app.use('/api/user', require('./routes/api/user'));

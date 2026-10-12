@@ -34,21 +34,21 @@ function AuthContextProvider(props) {
   useEffect(() => {
     Axios.defaults.headers.common["Authorization"] =
       localStorage.getItem("token");
-    Axios.get(authenticate.loggedIn).then((response) => {
-      if (response.data.status === false) {
-        window.localStorage.removeItem("token");
-        setLoggedIn(false);
-        <Redirect to="/" />;
-      } else {
-        //setting token to localStorage
-
-        Axios.get(authenticate.getUserData).then((user) => {
-          setLoggedIn(response.data);
-          setUserDetail(user.data);
-        });
-      }
-      setIsLoading(false);
-    });
+    Axios.get(authenticate.loggedIn)
+      .then((response) => {
+        if (response.data === false || response.data.status === false) {
+          window.localStorage.removeItem("token");
+          setLoggedIn(false);
+        } else {
+          // wait for the user's role before rendering routes, otherwise a refresh redirects to the homepage
+          return Axios.get(authenticate.getUserData).then((user) => {
+            setLoggedIn(response.data);
+            setUserDetail(user.data);
+          });
+        }
+      })
+      .catch(() => setLoggedIn(false))
+      .finally(() => setIsLoading(false));
   }, []);
   if (isLoading) {
     return (

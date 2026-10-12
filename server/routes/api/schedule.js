@@ -1,17 +1,17 @@
 const express = require('express');
 const router = express.Router();
 
-const { auth } = require('../../middleware/auth');
+const { auth, requireRole } = require('../../middleware/auth');
 
 // Schedule Model
 const Users = require('../../models/User');
 const Schedule = require('../../models/Schedule');
 
-router.post('/add_schedule', async (req, res) => {
+router.post('/add_schedule', auth, requireRole('admin'), async (req, res) => {
 	const { first, last, week } = req.body;
 	try {
 
-		let found = await Schedule.find({ week, start_date: first });
+		let found = await Schedule.findOne({ week, start_date: first });
 
 		let user_randoms = {};
 		let total_shifts = 7;
@@ -38,10 +38,10 @@ router.post('/add_schedule', async (req, res) => {
 			user_randoms[i] = staffs;
 		};
 
-		if (found.length > 0) {
+		if (found) {
 			found.schedule = user_randoms;
-			await Users.findByIdAndUpdate(found._id, found);
-			return res.status(200).send({ status: true, data: {} })
+			await found.save();
+			return res.status(200).send({ status: true, data: found })
 		} else {
 			const new_schedule = new Schedule({ start_date: first, end_date: last, week, schedule: user_randoms });
 			await new_schedule.save();

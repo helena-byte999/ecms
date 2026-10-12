@@ -30,32 +30,13 @@ router.post('/', async (req, res) => {
         if (!user) return res.status(401).send({ msg: 'User Does Not Exist', auth: false });
 
         //Validating Password
-        bcrypt.compare(password, user.password) //comparing passwords
-            .then(isMatch => {
-                if (!isMatch) {
-                    return res.status(401).send({ msg: 'Invalid Credentails', auth: false });
-                };
-                //isMatch is true 
-                jwt.sign(
-                    { id: user.id },
-                    process.env.jwtSecret,
-                    { expiresIn: 86400 },
-                    (err, token) => {
-                        if (err) throw err;
-                        // res.json({
-                        //     token,
-                        //     user: {
-                        //         id: user.id,
-                        //         name: user.name,
-                        //         email: user.email,
-                        //         school_id: user.school_id,
-                        //         phone: user.phone
-                        //     }
-                        // });
-                        res.status(200).send({ 'auth': true, token });
-                    }
-                );
-            });
+        const isMatch = await bcrypt.compare(password, user.password); //comparing passwords
+        if (!isMatch) {
+            return res.status(401).send({ msg: 'Invalid Credentails', auth: false });
+        };
+        //isMatch is true
+        const token = jwt.sign({ id: user.id }, process.env.jwtSecret, { expiresIn: 86400 });
+        res.status(200).send({ 'auth': true, token });
 
     } catch (err) {
         res.status(500).json({ msg: err, auth: false });
@@ -69,7 +50,8 @@ router.post('/', async (req, res) => {
 router.get('/user', auth, (req, res) => {
     User.findById(req.user.id)
         .select('-password')
-        .then(user => res.json(user));
+        .then(user => res.json(user))
+        .catch(() => res.status(500).json({ msg: 'Server Error' }));
 });
 
 
