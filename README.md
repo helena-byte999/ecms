@@ -150,6 +150,10 @@ npm test    # starts the real API against a throwaway MongoDB; no setup needed
 
 > Real secrets are never committed. Only `.env.example` templates are tracked, and `.env` is gitignored.
 
+## Credits
+
+Hero footage: [Pexels video 7522210](https://www.pexels.com/video/7522210/), used under the [Pexels licence](https://www.pexels.com/license/).
+
 ## License
 
 No license was specified on the original project, so all rights remain with the original authors. This copy is published for portfolio and educational purposes.

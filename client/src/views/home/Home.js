@@ -2,7 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   FiArrowRight,
+  FiBatteryCharging,
   FiCalendar,
+  FiDownload,
+  FiWifi,
   FiChevronRight,
   FiFileText,
   FiLock,
@@ -13,11 +16,23 @@ import {
 import Brand from "components/Brand.js";
 import { authenticate } from "data/api";
 import "./home.css";
+// Hero footage: Pexels video 7522210 (free Pexels licence), compressed to 1600px
+import heroVideo from "./media/care-home.mp4";
+import heroPoster from "./media/care-home-poster.jpg";
 
 const REPO_URL = "https://github.com/helena-byte999/ecms";
 const DOCS_URL = REPO_URL + "/blob/main/docs/requirements.md";
 const DEMO = process.env.REACT_APP_DEMO === "true";
 const HEALTH = authenticate.loggedIn.replace(/\/api\/.*$/, "/api/health");
+
+// Respect "reduce motion": show the still frame instead of playing the video
+const prefersStill = () => {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch (e) {
+    return false;
+  }
+};
 
 const stories = [
   {
@@ -66,15 +81,99 @@ function useDemoStatus() {
   return status;
 }
 
+function useScrolled(offset = 12) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > offset);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [offset]);
+  return scrolled;
+}
+
+// A phone showing what a family member sees in ECMS (static, sample data)
+function PhonePreview() {
+  return (
+    <div
+      className="tk-phone"
+      role="img"
+      aria-label="ECMS on a phone: a client's contract, amount to pay and recent invoices"
+    >
+      <div className="tk-phone__screen" aria-hidden="true">
+        <div className="tk-phone__status">
+          <span>9:41</span>
+          <span className="tk-phone__icons">
+            <i className="tk-phone__bars"><b /><b /><b /><b /></i>
+            <FiWifi />
+            <FiBatteryCharging />
+          </span>
+        </div>
+        <div className="tk-phone__app">
+          <div className="tk-phone__top">
+            <Brand compact />
+            <span className="tk-phone__avatar">MO</span>
+          </div>
+          <p className="tk-phone__hello">Good morning, Margaret</p>
+          <h2 className="tk-phone__title">Your care</h2>
+
+          <div className="tk-phone__card">
+            <div className="tk-phone__row">
+              <span>Contract</span>
+              <span className="tk-phone__pill tk-phone__pill--ok">Valid</span>
+            </div>
+            <strong>Until 26 Mar 2027</strong>
+            <div className="tk-phone__progress"><i style={{ width: "55%" }} /></div>
+          </div>
+
+          <div className="tk-phone__card">
+            <div className="tk-phone__row">
+              <span>To pay</span>
+              <span className="tk-phone__pill tk-phone__pill--warn">Due 15 Oct</span>
+            </div>
+            <strong className="tk-phone__amount">£2,400<small>.00</small></strong>
+            <span className="tk-phone__btn"><FiDownload /> October invoice (PDF)</span>
+          </div>
+
+          <p className="tk-phone__section">Recent invoices</p>
+          {["September", "August", "July"].map((m) => (
+            <div className="tk-phone__invoice" key={m}>
+              <span>{m} care package</span>
+              <span className="tk-phone__paid">Paid</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const scrolled = useScrolled();
   const status = useDemoStatus();
   const closeMenu = () => setMenuOpen(false);
   const cta = DEMO ? "Try the live demo" : "Sign in";
 
   return (
     <div className="tk">
-      <header className="tk-nav">
+      <div className="tk-sky tk-sky--video" aria-hidden="true">
+        {prefersStill() ? (
+          <img className="tk-sky__video" src={heroPoster} alt="" />
+        ) : (
+          <video
+            className="tk-sky__video"
+            src={heroVideo}
+            poster={heroPoster}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+          />
+        )}
+      </div>
+      <header className={"tk-nav" + (scrolled || menuOpen ? " is-solid" : "")}>
         <div className="tk-wrap tk-nav__inner">
           <Link to="/" aria-label="ECMS home" className="tk-nav__brand">
             <Brand compact />
@@ -106,18 +205,21 @@ function Home() {
       <main>
         <section className="tk-hero">
           <div className="tk-wrap">
-            <h1>Elderly care, organised in one calm place</h1>
-            <p>
-              ECMS brings administrators, caregivers and families onto one
-              platform: contracts, weekly rotas, invoices and care profiles,
-              without the spreadsheets.
-            </p>
+            <h1>
+              Elderly care,
+              <br />
+              organised in one calm place
+            </h1>
+            <p>Contracts, rotas, invoices and care profiles. One place for everyone.</p>
             <div className="tk-hero__actions">
-              <Link to="/login" className="tk-btn tk-btn--dark">
-                {cta} <FiArrowRight aria-hidden="true" />
+              <Link to="/login" className="tk-pill">
+                <FiArrowRight aria-hidden="true" /> {cta}
               </Link>
-              <a href="#features" className="tk-btn tk-btn--light">See what it does</a>
+              <a href="#features" className="tk-pill">
+                <FiCalendar aria-hidden="true" /> See what it does
+              </a>
             </div>
+            <PhonePreview />
           </div>
         </section>
 
