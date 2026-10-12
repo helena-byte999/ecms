@@ -298,6 +298,17 @@ button.ecms-status,
     text-transform: capitalize;
   }
 }
+.ecms-demo-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
 .ecms-navactions {
   display: flex;
   align-items: center;

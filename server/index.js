@@ -23,6 +23,13 @@ app.use(
 //db connection
 const connection = require('./db');
 require('./seedAdmin')(connection);
+require('./demo').start(connection);
+
+// Health check for the host (Render) and uptime monitors
+app.get('/api/health', (req, res) => {
+	const db = ['disconnected', 'connected', 'connecting', 'disconnecting'][connection.connection.readyState] || 'unknown';
+	res.status(db === 'connected' ? 200 : 503).send({ status: db === 'connected', db });
+});
 
 //Routes
 app.use('/api/user', require('./routes/api/user'));

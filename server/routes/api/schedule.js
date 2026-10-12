@@ -7,6 +7,7 @@ const { auth, requireRole } = require('../../middleware/auth');
 const Users = require('../../models/User');
 const Schedule = require('../../models/Schedule');
 const { searchFilter, pageOf, sortOf } = require('../../utils/search');
+const { buildRota } = require('../../utils/rota');
 
 // week is stored as text, so both columns sort by the ISO start date
 const SCHEDULE_SORTS = {
@@ -18,9 +19,7 @@ const SCHEDULE_SORTS = {
 const DEFAULT_PER_DAY = Number(process.env.ROTA_PER_DAY) || 5;
 
 //@routes POST api/schedule/add_schedule
-//@desc Generate (or regenerate) a week's rota from every active caregiver.
-//      Caregivers are dealt round-robin, so shares differ by at most one shift
-//      and nobody is on the same day twice.
+//@desc Generate (or regenerate) a week's rota from every active caregiver (rules in utils/rota.js)
 router.post('/add_schedule', auth, requireRole('admin'), async (req, res) => {
 	const { first, last, week } = req.body;
 	if (!first || !last || !week) {
@@ -31,23 +30,8 @@ router.post('/add_schedule', auth, requireRole('admin'), async (req, res) => {
 		if (caregivers.length === 0) {
 			return res.status(400).send({ status: false, msg: 'Add at least one active caregiver before generating a rota.' });
 		}
-		const shuffled = caregivers
-			.map(value => ({ value, sort: Math.random() }))
-			.sort((a, b) => a.sort - b.sort)
-			.map(({ value }) => value);
 		const requested = parseInt(req.body.per_day, 10) || DEFAULT_PER_DAY;
-		const perDay = Math.min(Math.max(requested, 1), shuffled.length);
-
-		const rota = {};
-		let next = 0;
-		for (let day = 0; day < 7; day++) {
-			rota[day] = [];
-			for (let slot = 0; slot < perDay; slot++) {
-				const c = shuffled[next % shuffled.length];
-				rota[day].push({ name: `${c.first_name} ${c.last_name}`, email: c.email });
-				next++;
-			}
-		}
+		const { rota, perDay } = buildRota(caregivers, requested);
 
 		let saved = await Schedule.findOne({ week, start_date: first });
 		if (saved) {
@@ -57,7 +41,7 @@ router.post('/add_schedule', auth, requireRole('admin'), async (req, res) => {
 		} else {
 			saved = await new Schedule({ start_date: first, end_date: last, week, schedule: rota }).save();
 		}
-		return res.status(200).send({ status: true, data: saved, perDay, caregivers: shuffled.length });
+		return res.status(200).send({ status: true, data: saved, perDay, caregivers: caregivers.length });
 	} catch (err) {
 		console.error(err);
 		res.status(500).send({ msg: 'Something went wrong. Please try again.', status: false });

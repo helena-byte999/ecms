@@ -9,6 +9,7 @@ const { auth, requireRole, selfOrAdmin } = require('../../middleware/auth');
 const Users = require('../../models/User');
 const Invoice = require('../../models/Invoice');
 const { searchFilter, pageOf, sortOf, collation } = require('../../utils/search');
+const demo = require('../../demo');
 
 const USER_SORTS = {
 	name: [['first_name', 1], ['last_name', 1]],
@@ -28,6 +29,13 @@ router.patch('/update_user/:id', auth, requireRole('admin'), async (req, res) =>
 
 	try {
 		let data = req.body;
+		// keep the shared demo logins working for the next visitor
+		if (demo.enabled() && demo.isDemoAccount(await Users.findById(id).select('email'))) {
+			delete data.email;
+			delete data.role;
+			delete data.status;
+			delete data.password;
+		}
 		if (data.password) {
 			const salt = await bcrypt.genSalt(10);
 			data.password = await bcrypt.hash(data.password, salt);
@@ -99,6 +107,9 @@ router.patch('/set_status/:id', auth, requireRole('admin'), async (req, res) => 
 		return res.status(400).send({ status: false, msg: "You can't deactivate your own account." });
 	}
 	try {
+		if (demo.enabled() && demo.isDemoAccount(await Users.findById(req.params.id).select('email'))) {
+			return res.status(403).send({ status: false, msg: 'Demo sign-in accounts stay active so the next visitor can use them. Try another person.' });
+		}
 		const user = await Users.findByIdAndUpdate(req.params.id, { status }, { new: true }).select('-password');
 		if (!user) return res.status(404).send({ status: false, msg: 'User not found.' });
 		res.status(200).send({ status: true, data: user });

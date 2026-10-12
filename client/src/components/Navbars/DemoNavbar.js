@@ -129,6 +129,16 @@ function Header({ props, routes }) {
         </NavbarToggler>
         <Collapse isOpen={isOpen} navbar className="justify-content-end">
           <Nav navbar className="ecms-navactions">
+            {process.env.REACT_APP_DEMO === "true" && (
+              <NavItem>
+                <span
+                  className="ecms-demo-chip"
+                  title="This is a demo with sample data. It resets every night."
+                >
+                  Demo · resets nightly
+                </span>
+              </NavItem>
+            )}
             <NavItem>
               <Link
                 to={`/${userDetail.role}/user-page`}

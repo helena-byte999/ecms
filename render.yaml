@@ -1,0 +1,27 @@
+# Render Blueprint for the ECMS API (https://render.com/docs/blueprint-spec).
+# New > Blueprint > pick this repo. Render asks for the values marked sync: false.
+services:
+  - type: web
+    name: ecms-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci --omit=dev
+    startCommand: node index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # MongoDB Atlas connection string (mongodb+srv://...)
+      - key: mongoURLProduction
+        sync: false
+      # The Vercel URL of the frontend, e.g. https://ecms-xyz.vercel.app (no trailing slash)
+      - key: FrontEndHostProduction
+        sync: false
+      - key: jwtSecret
+        generateValue: true
+      # Public demo: sample data, one-click role logins, nightly reset. Turn off for real data.
+      - key: DEMO_MODE
+        value: "true"
+      - key: DEMO_PASSWORD
+        value: ecms-demo

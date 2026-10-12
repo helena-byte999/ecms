@@ -76,4 +76,7 @@ export const authenticate = {
 
   //---------
   userAuth: `${BackEnd}/api/auth`,
+
+  // one-click demo sign-in ({ role }), demo deployments only
+  demoAuth: `${BackEnd}/api/auth/demo`,
 };

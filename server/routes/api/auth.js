@@ -7,6 +7,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 // Users Model
 const User = require('../../models/User');
+const demo = require('../../demo');
 // getting the auth middleware
 const { auth } = require('../../middleware/auth');
 
@@ -51,6 +52,29 @@ router.post('/', loginLimiter, async (req, res) => {
         const token = jwt.sign({ id: user.id }, process.env.jwtSecret, { expiresIn: 86400 });
         res.status(200).send({ 'auth': true, token });
 
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ msg: 'Something went wrong. Please try again.', auth: false });
+    }
+});
+
+
+//@routes POST api/auth/demo
+//@desc One-click sign-in to a demo account ({ role: admin | caregiver | client }), demo mode only
+//@access Public
+router.post('/demo', loginLimiter, async (req, res) => {
+    if (!demo.enabled()) return res.status(404).send({ msg: 'Demo mode is off.', auth: false });
+    const email = demo.ACCOUNTS[req.body.role];
+    if (!email) return res.status(400).send({ msg: 'Choose admin, caregiver or client.', auth: false });
+    try {
+        let user = await User.findOne({ email });
+        // demo data missing (e.g. a fresh database): seed it now
+        if (!user) {
+            await demo.resetDemoData();
+            user = await User.findOne({ email });
+        }
+        const token = jwt.sign({ id: user.id }, process.env.jwtSecret, { expiresIn: 86400 });
+        res.status(200).send({ auth: true, token, role: user.role });
     } catch (err) {
         console.error(err);
         res.status(500).json({ msg: 'Something went wrong. Please try again.', auth: false });

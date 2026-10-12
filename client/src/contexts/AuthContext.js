@@ -32,8 +32,17 @@ function AuthContextProvider(props) {
     }
   }
   useEffect(() => {
-    Axios.defaults.headers.common["Authorization"] =
-      localStorage.getItem("token");
+    const token = localStorage.getItem("token");
+    // Logged-out visitors don't need the server to see public pages, so don't
+    // make them wait for it (free hosting can take ~a minute to wake up).
+    // Ping it anyway so it's awake by the time they sign in.
+    if (!token) {
+      Axios.get(authenticate.loggedIn).catch(() => {});
+      setLoggedIn(false);
+      setIsLoading(false);
+      return;
+    }
+    Axios.defaults.headers.common["Authorization"] = token;
     Axios.get(authenticate.loggedIn)
       .then((response) => {
         if (response.data === false || response.data.status === false) {

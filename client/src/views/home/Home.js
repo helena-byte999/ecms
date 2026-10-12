@@ -17,6 +17,7 @@ import Brand from "components/Brand.js";
 import "./home.css";
 
 const REPO_URL = "https://github.com/helena-byte999/ecms";
+const DEMO = process.env.REACT_APP_DEMO === "true";
 
 const roles = [
   {
@@ -165,7 +166,8 @@ function Home() {
               </p>
               <div className="eh-hero__actions">
                 <Link to="/login" className="eh-btn eh-btn--primary eh-btn--lg">
-                  Sign in to your dashboard <FiArrowRight aria-hidden="true" />
+                  {DEMO ? "Try the live demo" : "Sign in to your dashboard"}{" "}
+                  <FiArrowRight aria-hidden="true" />
                 </Link>
                 <a href="#how" className="eh-btn eh-btn--ghost eh-btn--lg">
                   See how it works
@@ -334,13 +336,18 @@ function Home() {
           <div className="eh-container">
             <div className="eh-cta">
               <div>
-                <h2>Ready to see your dashboard?</h2>
+                <h2>
+                  {DEMO ? "See it in action" : "Ready to see your dashboard?"}
+                </h2>
                 <p>
-                  Sign in with the account your administrator set up for you.
+                  {DEMO
+                    ? "Try ECMS as an administrator, caregiver or client. No sign-up needed."
+                    : "Sign in with the account your administrator set up for you."}
                 </p>
               </div>
               <Link to="/login" className="eh-btn eh-btn--light eh-btn--lg">
-                Sign in <FiArrowRight aria-hidden="true" />
+                {DEMO ? "Try the demo" : "Sign in"}{" "}
+                <FiArrowRight aria-hidden="true" />
               </Link>
             </div>
           </div>

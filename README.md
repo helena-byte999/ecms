@@ -1,38 +1,41 @@
 # Elderly Care Management System (ECMS)
 
-A full-stack web application that connects elderly individuals with caregivers and gives administrators a single place to manage people, contracts, schedules, and invoices.
+[![CI](https://github.com/helena-byte999/ecms/actions/workflows/ci.yml/badge.svg)](https://github.com/helena-byte999/ecms/actions/workflows/ci.yml)
 
-**Live demo:** _coming soon_ · **Stack:** React · Tailwind CSS · Sass · Node.js · Express · MongoDB
+A full-stack web application that gives a care home one place to manage its clients, caregivers, contracts, weekly rotas and invoices, with a separate dashboard for administrators, caregivers and clients.
 
-> This started as an undergraduate team project. This repository is my copy, cleaned up and documented for my portfolio. See [Team & my role](#team--my-role).
+**Live demo:** _link coming soon_ · try it as an administrator, caregiver or client, no sign-up needed ([details](#try-the-demo))
+**Stack:** React · Sass · Node.js · Express · MongoDB
+
+> This started as an undergraduate team project. This repository is my copy, rebuilt and documented for my portfolio. See [Team & my role](#team--my-role) and the [requirements & design](docs/requirements.md) I wrote.
 
 ---
 
 ## Overview
 
-ECMS is a role-based care-management platform with three types of users, each with their own dashboard and permissions:
+ECMS is role-based. Everyone signs in to the same system and sees only what they need:
 
-- **Admin** — manages caregivers, clients, contracts, schedules, and invoices across the whole system.
-- **Caregiver** — views their assigned contracts, schedules, invoices, and profile.
-- **Client (elderly individual / family)** — views their contracts, invoices, and profile.
-
-Authentication is handled with JSON Web Tokens and hashed passwords, and all care data is stored in MongoDB.
+- **Administrator** manages clients and caregivers, contracts, the weekly rota and invoices.
+- **Caregiver** sees their shifts (highlighted in the rota), their contract and their invoices.
+- **Client** (an elderly resident or their family) sees their contract, invoices and profile.
 
 ## Features
 
-- Registration and JWT-based login for all three roles
-- Admin dashboard to create and manage caregivers and clients
-- Contract management (start/end dates, descriptions) linked to users
-- Weekly schedule management for caregivers
-- Invoicing (amount, type, description, date) per user
-- Detailed user profiles: personal details, medical info, next of kin, and emergency contacts
-- Responsive UI built with React, Tailwind CSS, and Sass
+- **Role-based dashboards** with server-side permission checks: people only ever see their own records
+- **People**: client and caregiver profiles with medical notes, next of kin and emergency contacts
+- **Deactivate / reactivate** accounts: records are kept, the person can't sign in and is left off new rotas
+- **Contracts**: valid, expired and "no contract" at a glance, with end dates
+- **Automatic weekly rota** from every active caregiver: shares differ by at most one shift, nobody works the same day twice, and caregivers per day is adjustable
+- **Invoices** formatted in the care home's currency
+- **Search, sortable columns and paging** across the whole list, not just the visible page
+- **Responsive**: on phones, tables turn into readable cards
+- **Demo mode**: sample data, one-click role sign-in, nightly reset
 
 ## Screenshots
 
-| Homepage | Sign in |
+| Homepage | Sign in (demo) |
 |----------|---------|
-| ![ECMS homepage](docs/screenshots/home.png) | ![Sign-in page](docs/screenshots/login.png) |
+| ![ECMS homepage](docs/screenshots/home.png) | ![Sign-in page with one-click demo roles](docs/screenshots/login.png) |
 
 | Admin dashboard | Caregiver dashboard (own shifts highlighted) |
 |-----------------|----------------------------------------------|
@@ -42,55 +45,81 @@ Authentication is handled with JSON Web Tokens and hashed passwords, and all car
 
 _Screenshots use made-up demo data._
 
+## Try the demo
+
+On the sign-in page, choose **Try as administrator**, **caregiver** or **client**. You can also sign in normally:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Administrator | `admin@example.com` | `ecms-demo` |
+| Caregiver | `caregiver@example.com` | `ecms-demo` |
+| Client | `client@example.com` | `ecms-demo` |
+
+Everything in the demo is sample data and resets every night (03:00 UTC), so feel free to add, change or deactivate things. The three demo accounts can't be deactivated or have their email, role or password changed, so they always work for the next visitor. The demo server sleeps when idle, so the first sign-in can take up to a minute.
+
 ## Tech stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React (Create React App), Tailwind CSS, Sass |
-| Backend | Node.js, Express |
-| Database | MongoDB with Mongoose |
-| Auth | JSON Web Tokens (JWT), bcryptjs |
-| Hosting | Vercel (frontend), Render (backend), MongoDB Atlas (database) |
+| Frontend | React 17 (Create React App), React Router, reactstrap, Sass |
+| Backend | Node.js 22, Express |
+| Database | MongoDB with Mongoose 8 |
+| Auth & security | JSON Web Tokens, bcrypt, role checks, helmet, rate-limited sign-in |
+| Testing & CI | 72 API checks against a throwaway MongoDB, run by GitHub Actions on every push |
+| Hosting | Vercel (frontend), Render (API), MongoDB Atlas (database) |
 
-## Data model
+## Requirements, UML and data model
 
-The core schemas (defined in [`server/models`](server/models)):
+The [requirements & design document](docs/requirements.md) has the original 2022 requirements, use-case, ER and class diagrams. Next to them are updated diagrams of the system as built, and a table of which use cases are done. In short:
 
-- **User** — email, name, date of birth, role, address, phone, status, staff type, medical info, password; embeds **Contracts**, **Next of Kin**, and **Emergency Contact**.
-- **Invoice** — email, amount, type, description, date created.
-- **Schedule** — week, start/end dates, schedule entries.
+- **User**: name, email, role (admin / caregiver / client), status (active / on-leave / in-active), contact details, medical notes; contains **Contracts**, **Next of Kin** and **Emergency Contact**
+- **Invoice**: client email, amount, type, description, date
+- **Schedule**: week, dates, and the caregivers on duty each day
 
 ## Team & my role
 
-This was a group project. The original team repository is [NabsCodes/ecms](https://github.com/NabsCodes/ecms).
+This was a group project with four students. The original team repository is [NabsCodes/ecms](https://github.com/NabsCodes/ecms).
 
 **My contributions:**
-- **Frontend** — built and styled the React views and components
-- **Database** — designed the MongoDB schemas and data relationships
-- **UML** — produced the system's UML diagrams
-- **Requirements documentation** — wrote the requirements specification
+- **Frontend**: built and styled the React views and components
+- **Database**: designed the MongoDB schemas and data relationships
+- **UML**: produced the use-case, ER and class diagrams ([see them](docs/requirements.md#original-diagrams-2022))
+- **Requirements documentation**: wrote the requirements specification ([see it](docs/requirements.md))
 
 ## Running locally
 
 **Prerequisites:** Node.js 22 and a MongoDB database (local, or a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster).
 
 ```bash
-# 1. Clone
 git clone https://github.com/helena-byte999/ecms.git
 cd ecms
 
-# 2. Backend
+# API
 cd server
-cp .env.example .env        # then fill in the values (see below)
+cp .env.example .env        # fill in the values (see below); set DEMO_MODE=true for sample data
 npm install
-npm run dev                 # starts on http://localhost:5001
+npm run dev                 # http://localhost:5001
 
-# 3. Frontend (in a second terminal)
+# Frontend (second terminal)
 cd client
-cp .env.example .env        # then fill in the values
+cp .env.example .env        # set REACT_APP_DEMO=true to show the demo buttons
 npm install
-npm start                   # opens http://localhost:3000
+npm start                   # http://localhost:3000
 ```
+
+### Tests
+
+```bash
+cd server
+npm test    # starts the real API against a throwaway MongoDB; no setup needed
+```
+
+## Deploying
+
+1. **Database: MongoDB Atlas.** Create a free cluster and a database user. Under *Network Access*, allow `0.0.0.0/0`, because Render's addresses change. Copy the `mongodb+srv://…` connection string.
+2. **API: Render.** *New → Blueprint*, then pick this repo. [`render.yaml`](render.yaml) sets everything up. Paste the Atlas string into `mongoURLProduction`; leave `FrontEndHostProduction` for step 4.
+3. **Frontend: Vercel.** Import the repo and set **Root Directory** to `client`. Add `REACT_APP_BackEndHost` (your Render URL), `REACT_APP_DEMO=true` and `REACT_APP_CURRENCY`, then deploy.
+4. Back in Render, set `FrontEndHostProduction` to your Vercel URL (no trailing slash) so the API accepts its requests.
 
 ### Environment variables
 
@@ -98,23 +127,26 @@ npm start                   # opens http://localhost:3000
 
 | Variable | Description |
 |----------|-------------|
-| `LocalPort` | Port for the API, e.g. `5001` |
-| `mongoURL` | MongoDB connection string for local dev |
-| `mongoURLProduction` | MongoDB connection string for production |
-| `jwtSecret` | Secret used to sign JWTs (any long random string) |
-| `FrontEndHost` / `BackEndHost` | Local frontend/backend URLs |
-| `FrontEndHostProduction` | Production frontend URL (also allowed through CORS) |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | On startup, creates the first admin account if none exists. New accounts can only be created by an admin. |
+| `LocalPort` | Port for the API locally, e.g. `5001` |
+| `mongoURL` / `mongoURLProduction` | MongoDB connection strings for local and production |
+| `jwtSecret` | Secret used to sign sign-in tokens (any long random string) |
+| `FrontEndHostProduction` | Production frontend URL; the only other origin the API accepts |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Creates the first admin on startup if none exists (accounts can only be created by an admin) |
+| `DEMO_MODE` | `true` for a public demo: sample data, one-click demo sign-in, nightly reset. **Never on a database with real care records.** |
+| `DEMO_PASSWORD` | Password for the demo accounts (default `ecms-demo`) |
+| `LOGIN_RATE_LIMIT` | Sign-in attempts allowed per IP per 15 minutes (default 20) |
+| `ROTA_PER_DAY` | Default caregivers per day when generating a rota (default 5) |
 
 `client/.env`
 
 | Variable | Description |
 |----------|-------------|
-| `REACT_APP_BackEndHost` | URL of the API the frontend calls |
-| `REACT_APP_CURRENCY` | Currency invoices are shown in, as an ISO code (`GBP`, `NGN`, `USD`…). Each deployment serves one care home, so this is set per deployment. Defaults to `GBP`. |
-| `REACT_APP_LOCALE` | Number and date formatting, e.g. `en-GB`, `en-NG`. Defaults to `en-GB`. |
+| `REACT_APP_BackEndHost` | URL of the API |
+| `REACT_APP_DEMO` | `true` shows the "Try as …" buttons (needs `DEMO_MODE=true` on the API) |
+| `REACT_APP_CURRENCY` | Currency for invoices, as an ISO code (`GBP`, `NGN`, `USD`…). Each deployment serves one care home, so it's set per deployment. Default `GBP`. |
+| `REACT_APP_LOCALE` | Number and date formatting, e.g. `en-GB`, `en-NG`. Default `en-GB`. |
 
-> **Note:** real secrets are never committed — only `.env.example` templates are tracked, and `.env` is gitignored.
+> Real secrets are never committed. Only `.env.example` templates are tracked, and `.env` is gitignored.
 
 ## License
 
