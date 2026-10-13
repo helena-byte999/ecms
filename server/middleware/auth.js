@@ -66,11 +66,17 @@ function requireRole(...roles) {
     };
 }
 
-// Use after auth on /:email routes: admins can see anyone, everyone else only themselves
+// Use after auth on /:email routes: admins can see anyone, family members their
+// resident, everyone else only themselves
 async function selfOrAdmin(req, res, next) {
     try {
         const user = await Users.findById(req.user.id).select('-password');
-        if (!user || user.status === 'in-active' || (user.role !== 'admin' && user.email !== req.params.email)) {
+        let allowed = user && user.status !== 'in-active' && (user.role === 'admin' || user.email === req.params.email);
+        if (user && !allowed && user.role === 'family' && user.status !== 'in-active' && user.resident) {
+            const resident = await Users.findById(user.resident).select('email');
+            allowed = !!resident && resident.email === req.params.email;
+        }
+        if (!allowed) {
             return res.status(403).send({ status: false, msg: "You do not have permission to do this" });
         }
         req.currentUser = user;

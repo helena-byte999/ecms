@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
 const { auth, requireRole, selfOrAdmin } = require('../../middleware/auth');
 
@@ -27,10 +28,17 @@ const BY_NAME = { first_name: 1, last_name: 1 };
 //@response - status: true or false | error
 // Fields an admin may change on a person. Role is fixed after creation; status
 // can be active / on-leave / in-active (in-active blocks sign-in, like Deactivate).
-const EDITABLE = ['first_name', 'last_name', 'email', 'phone', 'address', 'dob', 'description', 'staff_type', 'status', 'Medical', 'NextOfKin', 'EmergencyContact', 'Contracts', 'password'];
+const EDITABLE = ['first_name', 'last_name', 'email', 'phone', 'address', 'dob', 'description', 'staff_type', 'status', 'Medical', 'NextOfKin', 'EmergencyContact', 'Contracts', 'password', 'relationship'];
 const REQUIRED = ['first_name', 'last_name', 'email', 'phone', 'address', 'dob'];
 const STATUSES = ['active', 'on-leave', 'in-active'];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ROLES = ['admin', 'caregiver', 'client', 'family'];
+
+// True if deactivating `user` would leave the home without an active admin
+async function lastAdmin(user) {
+	if (!user || user.role !== 'admin') return false;
+	return !(await Users.exists({ role: 'admin', status: { $ne: 'in-active' }, _id: { $ne: user._id } }));
+}
 
 //@routes PATCH api/user/update_user/:id
 //@desc Update a person's details (admin)
@@ -60,6 +68,9 @@ router.patch('/update_user/:id', auth, requireRole('admin'), async (req, res) =>
 			if (!STATUSES.includes(data.status)) return res.status(400).send({ status: false, msg: 'Status must be active, on-leave or in-active.' });
 			if (data.status !== 'active' && String(existing._id) === String(req.currentUser._id)) {
 				return res.status(400).send({ status: false, msg: "You can't change your own status." });
+			}
+			if (data.status === 'in-active' && await lastAdmin(existing)) {
+				return res.status(400).send({ status: false, msg: 'There must always be at least one active admin.' });
 			}
 		}
 		if ('email' in data) {
@@ -102,45 +113,58 @@ router.patch('/update_user/:id', auth, requireRole('admin'), async (req, res) =>
 	}
 });
 
-//@routes POST api/users/register
-//@desc Register new user
-//@access public
+//@routes POST api/user/add_user
+//@desc Create an account (admin): admin, caregiver, client (resident) or family member.
+// Family members need { resident: <client id>, relationship } and only contact details.
 router.post('/add_user', auth, requireRole('admin'), async (req, res) => {
-	const { first_name, email, last_name, dob, role, address, phone, password } = req.body;
-	if (email == undefined || first_name == undefined || last_name == undefined || dob == undefined || role == undefined || address == undefined || phone == undefined || password == undefined) {
-		return res.status(400).send({ msg: 'Some fields are empty!' });
-	}
+	const body = req.body || {};
+	const role = body.role;
+	if (!ROLES.includes(role)) return res.status(400).send({ status: false, msg: 'Role must be admin, caregiver, client or family.' });
+	const needed = role === 'family'
+		? ['first_name', 'last_name', 'email', 'phone', 'password']
+		: ['first_name', 'last_name', 'email', 'dob', 'address', 'phone', 'password'];
+	if (needed.some(key => !String(body[key] ?? '').trim())) return res.status(400).send({ status: false, msg: 'Some fields are empty!' });
+	const email = String(body.email).trim().toLowerCase();
+	if (!EMAIL.test(email)) return res.status(400).send({ status: false, msg: 'Enter a valid email address.' });
 	try {
-		const user = await Users.findOne({ email: email });
+		if (await Users.exists({ email })) return res.status(400).send({ status: false, msg: 'User Already Exist' });
 
-		//if user already exist
-		if (user) { return res.status(400).send({ msg: 'User Already Exist' }); };
-
-		//creating new user
-		const newUser = new Users(req.body);
-
-		//Create salt and hash
-		const salt = await bcrypt.genSalt(10);
-
-		newUser.password = await bcrypt.hash(req.body.password || "", salt);
-
-		try {
-			await newUser.save(); //save the data to db
-			const { password: _hash, ...data } = newUser.toObject();
-			return res
-				.status(200)
-				.send({ msg: 'Account created successfuly!', status: true, data });
-		} catch (error) {
-			return res.status(500).send({ msg: 'Account Not Created!' });
+		let data;
+		if (role === 'family') {
+			const resident = mongoose.isValidObjectId(body.resident) && await Users.findOne({ _id: body.resident, role: 'client' }).select('_id');
+			if (!resident) return res.status(400).send({ status: false, msg: 'Choose the resident this family member is linked to.' });
+			data = {
+				role, email, resident: resident._id,
+				first_name: String(body.first_name).trim(), last_name: String(body.last_name).trim(),
+				phone: String(body.phone).trim(), relationship: String(body.relationship || '').trim().slice(0, 40),
+			};
+		} else {
+			data = { ...body, role, email };
+			delete data.resident;
+			delete data.relationship;
+			delete data._id;
 		}
+		data.password = await bcrypt.hash(String(body.password), await bcrypt.genSalt(10));
+		const newUser = await new Users(data).save();
+		const { password: _hash, ...saved } = newUser.toObject();
+		return res.status(200).send({ msg: 'Account created successfuly!', status: true, data: saved });
 	} catch (err) {
-		console.log(err);
 		console.error(err);
-		res.status(400).json({ msg: 'Something went wrong. Please try again.' });
+		return res.status(500).send({ status: false, msg: 'Account Not Created!' });
 	}
+});
 
-
-
+//@routes GET api/user/family/:residentId
+//@desc Family members linked to a resident (admin)
+router.get('/family/:residentId', auth, requireRole('admin'), async (req, res) => {
+	if (!mongoose.isValidObjectId(req.params.residentId)) return res.status(404).send({ status: false, msg: 'Resident not found.' });
+	try {
+		const family = await Users.find({ role: 'family', resident: req.params.residentId }).select('-password').sort(BY_NAME);
+		res.status(200).send({ status: true, data: family, count: family.length });
+	} catch (err) {
+		console.error(err);
+		res.status(500).json({ status: false, msg: 'Something went wrong. Please try again.' });
+	}
 });
 
 //@routes PATCH api/user/set_status/:id
@@ -157,6 +181,9 @@ router.patch('/set_status/:id', auth, requireRole('admin'), async (req, res) => 
 	try {
 		if (demo.enabled() && demo.isDemoAccount(await Users.findById(req.params.id).select('email'))) {
 			return res.status(403).send({ status: false, msg: 'Demo sign-in accounts stay active so the next visitor can use them. Try another person.' });
+		}
+		if (status === 'in-active' && await lastAdmin(await Users.findById(req.params.id).select('role'))) {
+			return res.status(400).send({ status: false, msg: 'There must always be at least one active admin.' });
 		}
 		const user = await Users.findByIdAndUpdate(req.params.id, { status }, { new: true }).select('-password');
 		if (!user) return res.status(404).send({ status: false, msg: 'User not found.' });
@@ -218,7 +245,7 @@ router.get('/show_all_contracts', auth, requireRole('admin'), async (req, res) =
 			take = 10;
 		}
 		// let caregiver = await CareGiver.find({ $or: [{ email: search }, { first_name: search }, { last_name: search }] }).skip(skip).limit(take);
-		let users = await Users.find().select('-password');
+		let users = await Users.find({ role: { $ne: 'family' } }).select('-password');
 
 		users.map((user) => {
 			if (user.Contracts.length > 0) {
@@ -283,7 +310,7 @@ router.get('/get_counts', auth, requireRole('admin'), async (req, res) => {
 		const soon = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
 		const clients = users.filter(u => u.role === 'client');
 		const carers = users.filter(u => u.role === 'caregiver');
-		const people = users.filter(u => u.role !== 'admin');
+		const people = users.filter(u => u.role === 'client' || u.role === 'caregiver');
 		const valid = people.filter(u => contractState(u) === 'valid');
 		return res.status(200).send({
 			status: true,

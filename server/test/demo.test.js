@@ -81,6 +81,21 @@ async function waitFor(server, text, ms = 15000) {
 	check('chart data is admin-only', (await call('GET', '/api/invoice/summary', { token: client.token })).status === 403);
 	const mine = (await call('GET', '/api/user/get_counts/client@example.com', { token: client.token })).data?.data;
 	check('client dashboard: contract state and amount to pay', mine?.contract?.state === 'valid' && mine.outstanding === 2400 && mine.unpaid === 1, JSON.stringify(mine));
+	// Care records and family access
+	const family = await login('family');
+	const me = (await call('GET', '/api/auth/user', { token: family.token })).data;
+	check('one-click family sign-in is linked to Margaret Okafor', family?.role === 'family' && me.resident?.email === 'client@example.com');
+	const margaretId = (await call('GET', '/api/user/show_user_by_email/client@example.com', { token: family.token })).data?.data?._id;
+	const careLog = (await call('GET', `/api/care/${margaretId}/entries`, { token: family.token })).data?.data || [];
+	const visit = careLog.find(e => e.type === 'visit');
+	check("Margaret's care log has a GP visit that started antibiotics", visit?.visit?.started?.[0]?.name === 'Amoxicillin' && careLog.length > 40, `${careLog.length} entries`);
+	const margaretMeds = (await call('GET', `/api/care/${margaretId}/medications`, { token: family.token })).data;
+	check('...and the antibiotics are on her medicine list', margaretMeds.active.some(m => m.name === 'Amoxicillin' && m.end_date));
+	const careReport = (await call('GET', '/api/care/report', { token: admin.token })).data?.data;
+	check('care report: every resident, mostly given, a few refused, an incident or two', careReport?.residents.length === 12 && careReport.totals.completion >= 85 && careReport.totals.refused > 0 && careReport.incidents.length >= 2, JSON.stringify(careReport?.totals));
+	check('care report: entries come from caregivers on the rota', careReport.caregivers.length >= 3 && careReport.caregivers.every(c => c.role === 'caregiver'));
+	check('a corrected entry is in the sample data', (await call('GET', `/api/care/${careReport.residents.find(r => r.name === 'Edward Lindqvist')._id}/entries?type=meal`, { token: admin.token })).data.data.some(e => e.corrected_by));
+	check('family can read the care summary', (await call('GET', `/api/care/${margaretId}/summary`, { token: family.token })).data?.data?.visits.length === 1);
 	check('regular sign-in works with the demo password', (await call('POST', '/api/auth', { body: { email: 'client@example.com', password: 'demo-pass' } })).data?.auth === true);
 	const clientId = myInvoices && (await call('GET', '/api/user/show_user_by_email/client@example.com', { token: admin.token })).data.data._id;
 	check('demo sign-in accounts cannot be deactivated', (await call('PATCH', `/api/user/set_status/${clientId}`, { token: admin.token, body: { status: 'in-active' } })).status === 403);

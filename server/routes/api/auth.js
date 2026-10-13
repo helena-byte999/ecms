@@ -60,12 +60,12 @@ router.post('/', loginLimiter, async (req, res) => {
 
 
 //@routes POST api/auth/demo
-//@desc One-click sign-in to a demo account ({ role: admin | caregiver | client }), demo mode only
+//@desc One-click sign-in to a demo account ({ role: admin | caregiver | client | family }), demo mode only
 //@access Public
 router.post('/demo', loginLimiter, async (req, res) => {
     if (!demo.enabled()) return res.status(404).send({ msg: 'Demo mode is off.', auth: false });
     const email = demo.ACCOUNTS[req.body.role];
-    if (!email) return res.status(400).send({ msg: 'Choose admin, caregiver or client.', auth: false });
+    if (!email) return res.status(400).send({ msg: 'Choose admin, caregiver, client or family.', auth: false });
     try {
         let user = await User.findOne({ email });
         // demo data missing (e.g. a fresh database): seed it now
@@ -114,15 +114,19 @@ router.post('/change_password', loginLimiter, auth, async (req, res) => {
 //@routes GET api/auth/user
 //@desc Get user data
 //@access Private
-router.get('/user', auth, (req, res) => {
-    User.findById(req.user.id)
-        .select('-password')
-        .then(user => {
-            // a deactivated account loses access even with a token that hasn't expired yet
-            if (!user || user.status === 'in-active') return res.status(403).json({ msg: 'Account unavailable.' });
-            res.json(user);
-        })
-        .catch(() => res.status(500).json({ msg: 'Server Error' }));
+// Family members also get the resident they're linked to, which their pages show
+router.get('/user', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password').lean();
+        // a deactivated account loses access even with a token that hasn't expired yet
+        if (!user || user.status === 'in-active') return res.status(403).json({ msg: 'Account unavailable.' });
+        if (user.role === 'family') {
+            user.resident = await User.findOne({ _id: user.resident, role: 'client' }).select('first_name last_name email').lean();
+        }
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ msg: 'Server Error' });
+    }
 });
 
 

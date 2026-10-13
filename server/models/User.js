@@ -59,6 +59,9 @@ const EmergencyContactSchema = new Schema(
 );
 
 
+// Family members only need contact details; everyone else needs the full record
+function notFamily() { return this.role !== 'family'; }
+
 const UserSchema = new Schema({
     email: {
         type: String,
@@ -74,7 +77,7 @@ const UserSchema = new Schema({
     },
     dob: {
         type: String,
-        required: [true, 'Date of birth is required!']
+        required: [notFamily, 'Date of birth is required!']
     },
     role: {
         type: String,
@@ -84,7 +87,7 @@ const UserSchema = new Schema({
     },
     address: {
         type: String,
-        required: [true, 'Address is required!']
+        required: [notFamily, 'Address is required!']
     },
     phone: {
         type: String,
@@ -102,6 +105,9 @@ const UserSchema = new Schema({
         default: Date.now
     },
     Contracts: [ContractSchema],
+    // family members: the resident (a client) they can see, and how they're related
+    resident: { type: Schema.Types.ObjectId, ref: 'Users' },
+    relationship: { type: String },
     NextOfKin: NextOfKinSchema,
     EmergencyContact: EmergencyContactSchema
 });

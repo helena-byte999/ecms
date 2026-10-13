@@ -36,6 +36,7 @@ app.use('/api/user', require('./routes/api/user'));
 app.use('/api/invoice', require('./routes/api/invoice'));
 app.use('/api/schedule', require('./routes/api/schedule'));
 app.use('/api/auth', require('./routes/api/auth'));
+app.use('/api/care', require('./routes/api/care'));
 
 
 const PORT = process.env.PORT || process.env.LocalPort;
