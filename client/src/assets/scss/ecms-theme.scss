@@ -1644,3 +1644,13 @@ textarea.form-control {
     }
   }
 }
+
+// Shown for a moment while a role's area loads after sign-in
+.ecms-route-loading {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  color: var(--muted, #64748b);
+  font-family: var(--font);
+  font-size: 15px;
+}

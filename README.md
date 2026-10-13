@@ -152,7 +152,7 @@ npm test    # starts the real API against a throwaway MongoDB; no setup needed
 
 ## Credits
 
-Hero footage: [Pexels video 7522210](https://www.pexels.com/video/7522210/), used under the [Pexels licence](https://www.pexels.com/license/).
+Care-home footage on the landing page: [Pexels video 7522210](https://www.pexels.com/video/7522210/), used under the [Pexels licence](https://www.pexels.com/license/).
 
 ## License
 
