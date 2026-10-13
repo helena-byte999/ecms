@@ -31,7 +31,7 @@ Residents are records, not logins: in a care home it's the family who follow alo
 - **Doctor's visits** update the resident's records automatically: medicines started or stopped and changes to allergies and conditions, with a before / after record in the log
 - **Care analytics** for admins: doses given and recorded on time, refused and missed doses, incidents and days unwell, each against the previous period; daily trend, outcomes by day or week, incidents by type, mood, staff activity, and a residents table with trend lines, lowest completion first
 - **Reports**: a care summary per resident (doses given, refused, missed and not recorded; incidents; visits; wellbeing; meals) and the analytics, as **PDF and CSV**
-- **Family access**: each relative gets their own read-only login, linked to one resident
+- **Family access**: each relative gets their own read-only login, linked to one resident, and sees their relative's **key worker** and who's on shift today
 - **Team admins**: admins can add other admins; you can't deactivate yourself or the last admin
 
 **Running the home:**
@@ -78,6 +78,22 @@ On the sign-in page, choose **administrator**, **caregiver** or **family member*
 | Family member (Margaret Okafor's daughter) | `family@example.com` | `ecms-demo` |
 
 Everything in the demo is fictional sample data and resets every night (03:00 UTC), so feel free to add, change or deactivate things. Through the day the sample staff keep recording routine care, leaving the most recent doses for you to record on the medicine round. Look at Margaret Okafor for a doctor's visit that started antibiotics. The demo accounts can't be deactivated or have their email, role or password changed, so they always work for the next visitor. The demo server sleeps when idle, so the first sign-in can take up to a minute.
+
+## Adding people
+
+Everyone is added by an admin, from **People** in the menu:
+
+| Who | Where | What they need |
+|-----|-------|----------------|
+| Resident | People → **Residents** → *Add resident* | Name, email, date of birth, address, phone, GP, next of kin. Optionally a **key worker**. Residents don't sign in, so there's no password. |
+| Family member | People → Residents → open the resident (eye icon) → **Family members** → *Add family member* | Name, relationship, email, phone and a temporary password. They sign in at `/login` and see only that resident. |
+| Caregiver | People → **Caregivers** → *Add caregiver* | Name, email, phone, date of birth, address, staff type, next of kin, emergency contact and a temporary password. |
+| Admin | People → **Admins** → *Add admin* | Name, email, phone, date of birth, address and a temporary password. |
+
+- To set or change a resident's key worker, open the resident and pick from **Key worker**.
+- Share temporary passwords privately. People change them from their profile (top-right menu).
+- On a new deployment the first admin is created from `ADMIN_EMAIL` and `ADMIN_PASSWORD` (see [Environment variables](#environment-variables)).
+- In the demo, anything you add disappears at the nightly reset.
 
 ## Tech stack
 

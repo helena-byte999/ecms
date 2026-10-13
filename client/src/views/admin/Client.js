@@ -33,11 +33,37 @@ import {
   Button,
 } from "reactstrap";
 
+// The caregiver responsible for a resident; their family sees the name
+function KeyWorkerSelect({ caregivers, value, onChange }) {
+  return (
+    <FormGroup>
+      <label htmlFor="key-worker">Key worker</label>
+      <Input id="key-worker" type="select" value={value || ""} onChange={(e) => onChange(e.target.value)}>
+        <option value="">No key worker yet</option>
+        {caregivers.map((c) => (
+          <option key={c._id} value={c._id}>
+            {c.first_name} {c.last_name}
+            {c.status === "on-leave" ? " (on leave)" : ""}
+          </option>
+        ))}
+      </Input>
+      <small className="ecms-fieldhint">The caregiver responsible for this resident. Their family sees the name.</small>
+    </FormGroup>
+  );
+}
+
 function Clients() {
   const history = useHistory();
   const [clients, setClients] = useState([]);
   const [mode, setMode] = useState("all");
   const [current, setCurrent] = useState({});
+  const [caregivers, setCaregivers] = useState([]);
+  useEffect(() => {
+    axios
+      .get(user.showUsers + "/caregiver")
+      .then((r) => setCaregivers((r.data.data || []).filter((c) => c.status !== "in-active")))
+      .catch(() => {});
+  }, []);
   const [pagination, setPagination] = useState({ current: 1 });
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState({});
@@ -383,6 +409,11 @@ function Clients() {
                           }
                         />
                       </FormGroup>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col md="6">
+                      <KeyWorkerSelect caregivers={caregivers} value={current.key_worker} onChange={(v) => setCurrent({ ...current, key_worker: v })} />
                     </Col>
                   </Row>
                   <hr></hr>
@@ -814,6 +845,11 @@ function Clients() {
                               }
                             />
                           </FormGroup>
+                        </Col>
+                      </Row>
+                      <Row>
+                        <Col md="6">
+                          <KeyWorkerSelect caregivers={caregivers} value={current.key_worker} onChange={(v) => setCurrent({ ...current, key_worker: v })} />
                         </Col>
                       </Row>
 

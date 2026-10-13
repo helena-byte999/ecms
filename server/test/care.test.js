@@ -197,6 +197,16 @@ function scheduleChecks() {
 	check('home overview is admin-only', (await call('GET', '/api/care/report', { token: caregiver })).status === 403);
 	check('a bad date range is rejected', (await call('GET', `${R}/summary?from=2026-05-01&to=2026-04-01`, { token: admin })).status === 400);
 
+	// ---- Key worker and care team (shown to families)
+	const carerId = (await call('GET', '/api/user/show_user_by_email/carer@test.com', { token: admin })).data.data._id;
+	check('a key worker must be a caregiver', (await call('PATCH', `/api/user/update_user/${resident._id}`, { token: admin, body: { key_worker: me._id } })).status === 400);
+	const assigned = await call('PATCH', `/api/user/update_user/${resident._id}`, { token: admin, body: { key_worker: carerId } });
+	check('admin assigns a key worker to a resident', assigned.data?.data?.key_worker === carerId);
+	const famView = (await call('GET', '/api/care/residents', { token: family })).data;
+	check("family sees their relative's key worker by name", famView.data[0].key_worker?.name === 'Test carer' && Array.isArray(famView.on_shift_today), JSON.stringify(famView.data[0].key_worker));
+	check('the care log names the key worker too', (await call('GET', `${R}/entries`, { token: family })).data.resident.key_worker?.name === 'Test carer');
+	check('a key worker can be cleared', (await call('PATCH', `/api/user/update_user/${resident._id}`, { token: admin, body: { key_worker: '' } })).data?.data?.key_worker == null);
+
 	// ---- Who sees which residents
 	const list = async (token) => (await call('GET', '/api/care/residents', { token })).data?.data || [];
 	check('staff see every resident', (await list(caregiver)).length === 2);

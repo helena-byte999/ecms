@@ -288,6 +288,38 @@ a.care-btn:hover {
   color: var(--ink);
   font-size: 15px;
 }
+.care-resident__kw {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.care-team {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 18px;
+}
+.care-team__kw {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.care-team__kw strong {
+  display: block;
+  color: var(--ink);
+  font-size: 15px;
+}
+.care-team h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+@media (max-width: 760px) {
+  .care-team {
+    grid-template-columns: 1fr;
+  }
+}
 .care-resident__doses {
   display: flex;
   align-items: center;
@@ -437,6 +469,11 @@ a.care-btn:hover {
   color: var(--muted);
   text-align: right;
   white-space: nowrap;
+}
+.care-entry__role {
+  display: block;
+  font-size: 11.5px;
+  color: #94a3b8;
 }
 .care-entry--old {
   opacity: 0.6;

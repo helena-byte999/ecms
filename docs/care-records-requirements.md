@@ -114,6 +114,7 @@ Once everything was built, I reviewed the product as a whole. The question was s
 | Cut the admin menu from 10 items to 6 | Care (round, residents, analytics) and People (residents, caregivers, admins) became sections with tabs, and the profile moved to the account menu. |
 | Renamed "Clients" to "Residents", "Schedule" to "Rota" and "Care Givers" to "Caregivers" | One word for each thing, in the words a care home uses. |
 | Stopped families seeing the staff rota | It's staff information and families don't need it. |
+| Added key workers and "today's care team" for families | Feedback: the family view didn't say who looks after their relative. Each resident now has a named key worker (a common UK care-home practice), and families see who's on shift today and who wrote each entry. Names only; families contact the home for anything else. |
 | Rewrote the landing page to lead with care | It still led with contracts and invoicing. The strongest features (the medicine round, family access and analytics) weren't on it. |
 
 ## How we'll know it works

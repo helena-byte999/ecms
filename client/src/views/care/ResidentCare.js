@@ -340,6 +340,7 @@ function ResidentCare() {
                 <div className="care-header__facts">
                   {a !== null && <span>Age {a}</span>}
                   {resident.conditions && <span>{resident.conditions}</span>}
+                  {resident.key_worker && <span>Key worker: {resident.key_worker.name}</span>}
                   {resident.gp && <span>GP: {resident.gp}{resident.gp_phone ? ` (${resident.gp_phone})` : ""}</span>}
                   {resident.allergy && <span className="care-allergy">Allergy: {resident.allergy}</span>}
                 </div>

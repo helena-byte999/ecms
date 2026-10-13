@@ -29,7 +29,7 @@ const RESET_HOUR_UTC = 3;
 // Days of sample care history, enough to compare a 30-day period with the one before
 const HISTORY_DAYS = 60;
 // Bump when the sample data changes, so the next deploy re-seeds straight away
-const SEED_VERSION = 7;
+const SEED_VERSION = 8;
 const DAY = 86400000;
 
 const caregivers = [
@@ -158,6 +158,11 @@ async function resetDemoData() {
 		rotas.push({ first, last, rota });
 		await new Schedule({ start_date: first, end_date: last, week, schedule: rota }).save();
 	}
+
+	// Each resident has a key worker; Margaret's is Grace, the demo caregiver
+	const others = active.filter(c => c.email !== ACCOUNTS.caregiver);
+	const grace = active.find(c => c.email === ACCOUNTS.caregiver);
+	await Promise.all(residents.map((r, i) => Users.updateOne({ _id: r._id }, { key_worker: (i % 3 === 0 ? grace : others[i % others.length])._id })));
 
 	const care = await seedCare(residents, active, rotas, now);
 

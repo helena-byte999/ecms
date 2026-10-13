@@ -105,6 +105,8 @@ const UserSchema = new Schema({
         default: Date.now
     },
     Contracts: [ContractSchema],
+    // residents: the caregiver responsible for them (shown to their family)
+    key_worker: { type: Schema.Types.ObjectId, ref: 'Users' },
     // family members: the resident (a client) they can see, and how they're related
     resident: { type: Schema.Types.ObjectId, ref: 'Users' },
     relationship: { type: String },

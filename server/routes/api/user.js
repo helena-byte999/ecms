@@ -28,11 +28,20 @@ const BY_NAME = { first_name: 1, last_name: 1 };
 //@response - status: true or false | error
 // Fields an admin may change on a person. Role is fixed after creation; status
 // can be active / on-leave / in-active (in-active blocks sign-in, like Deactivate).
-const EDITABLE = ['first_name', 'last_name', 'email', 'phone', 'address', 'dob', 'description', 'staff_type', 'status', 'Medical', 'NextOfKin', 'EmergencyContact', 'Contracts', 'password', 'relationship'];
+const EDITABLE = ['first_name', 'last_name', 'email', 'phone', 'address', 'dob', 'description', 'staff_type', 'status', 'Medical', 'NextOfKin', 'EmergencyContact', 'Contracts', 'password', 'relationship', 'key_worker'];
 const REQUIRED = ['first_name', 'last_name', 'email', 'phone', 'address', 'dob'];
 const STATUSES = ['active', 'on-leave', 'in-active'];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ROLES = ['admin', 'caregiver', 'client', 'family'];
+
+// A resident's key worker must be a caregiver who hasn't been deactivated.
+// Returns { value } (an id, or null to clear it) or { error }.
+async function keyWorkerInput(value) {
+	if (value === null || value === '' || value === undefined) return { value: null };
+	if (!mongoose.isValidObjectId(value)) return { error: 'Choose a caregiver as key worker.' };
+	const carer = await Users.findOne({ _id: value, role: 'caregiver', status: { $ne: 'in-active' } }).select('_id');
+	return carer ? { value: carer._id } : { error: 'The key worker must be a current caregiver.' };
+}
 
 // True if deactivating `user` would leave the home without an active admin
 async function lastAdmin(user) {
@@ -78,6 +87,14 @@ router.patch('/update_user/:id', auth, requireRole('admin'), async (req, res) =>
 			if (!EMAIL.test(data.email)) return res.status(400).send({ status: false, msg: 'Enter a valid email address.' });
 			if (data.email !== existing.email && await Users.exists({ email: data.email, _id: { $ne: existing._id } })) {
 				return res.status(400).send({ status: false, msg: 'Another person already uses that email.' });
+			}
+		}
+		if ('key_worker' in data) {
+			if (existing.role !== 'client') delete data.key_worker;
+			else {
+				const kw = await keyWorkerInput(data.key_worker);
+				if (kw.error) return res.status(400).send({ status: false, msg: kw.error });
+				data.key_worker = kw.value;
 			}
 		}
 		// password: blank means "keep the current one"
@@ -145,6 +162,12 @@ router.post('/add_user', auth, requireRole('admin'), async (req, res) => {
 			delete data.resident;
 			delete data.relationship;
 			delete data._id;
+			delete data.key_worker;
+			if (role === 'client' && body.key_worker) {
+				const kw = await keyWorkerInput(body.key_worker);
+				if (kw.error) return res.status(400).send({ status: false, msg: kw.error });
+				data.key_worker = kw.value;
+			}
 		}
 		// residents never sign in, so they get a random password nobody knows
 		const password = role === 'client' ? require('crypto').randomBytes(24).toString('hex') : String(body.password);

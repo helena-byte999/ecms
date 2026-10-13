@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Notifications from "components/Notification/Notification";
 import StatCard from "components/ui/StatCard.js";
-import { formatDate, formatMoney } from "components/ui/ListUI.js";
+import { Avatar, formatDate, formatMoney } from "components/ui/ListUI.js";
 import { Link } from "react-router-dom";
 import { care, user } from "data/api";
 import { useAuth } from "contexts/AuthContext";
@@ -34,6 +34,7 @@ function Dashboard() {
   const subject = useSubject();
   const [c, setCounts] = useState({});
   const [today, setToday] = useState(null);
+  const [team, setTeam] = useState(null);
   const [recent, setRecent] = useState(null);
   const [notificationStatus, setNotificationStatus] = useState(false);
   const [notificationDetails, setNotificationDetails] = useState({ msg: "", type: "" });
@@ -42,7 +43,10 @@ function Dashboard() {
     () => {
       axios
         .get(care.residents)
-        .then((r) => setToday(r.data.data?.[0]?.today || {}))
+        .then((r) => {
+          setToday(r.data.data?.[0]?.today || {});
+          setTeam({ keyWorker: r.data.data?.[0]?.key_worker || null, onShift: r.data.on_shift_today || [] });
+        })
         .catch(() => setToday({}));
       axios
         .get(`${care.resident}/${subject.id}/entries`, { params: { from: daysAgo(2), to: ymd() } })
@@ -102,6 +106,50 @@ function Dashboard() {
             note={loaded && `${c.invoices} invoice${c.invoices === 1 ? "" : "s"} in total`}
           />
         </div>
+
+        {team && (
+          <div className="care-card" style={{ marginTop: 16 }}>
+            <div className="care-card__head">
+              <h3>{subject.first_name}'s care team</h3>
+            </div>
+            <div className="care-card__body">
+              <div className="care-team">
+                <div>
+                  <h4>Key worker</h4>
+                  {team.keyWorker ? (
+                    <div className="care-team__kw">
+                      <Avatar name={team.keyWorker.name} />
+                      <span>
+                        <strong>{team.keyWorker.name}</strong>
+                        <span className="care-muted">
+                          The caregiver responsible for {subject.first_name}
+                          {team.keyWorker.status === "on-leave" ? " (on leave at the moment)" : ""}
+                        </span>
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="care-muted">Not assigned yet. Ask the care home.</p>
+                  )}
+                </div>
+                <div>
+                  <h4>On shift today</h4>
+                  {team.onShift.length ? (
+                    <div className="ecms-chips">
+                      {team.onShift.map((n) => (
+                        <span key={n} className={"ecms-chip" + (team.keyWorker && n === team.keyWorker.name ? " ecms-chip--me" : "")}>{n}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="care-muted">Today's rota isn't published yet.</p>
+                  )}
+                  <span className="care-muted" style={{ marginTop: 8 }}>
+                    Every entry in the care log shows who recorded it. For anything else, contact the care home.
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="care-card" style={{ marginTop: 16 }}>
           <div className="care-card__head">

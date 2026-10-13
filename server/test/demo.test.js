@@ -108,6 +108,8 @@ async function waitFor(server, text, ms = 15000) {
 	const again = await topUp();
 	check('daytime top-up refills routine care exactly once', added === removed.deletedCount && again === 0, `${removed.deletedCount} removed, ${added} added, then ${again}`);
 	await mongoose.disconnect();
+	const famResidents = (await call('GET', '/api/care/residents', { token: family.token })).data;
+	check("family sees Margaret's key worker (Grace) and who's on shift today", famResidents.data[0].key_worker?.name === 'Grace Adeyemi' && famResidents.on_shift_today.length === 4, JSON.stringify({ kw: famResidents.data[0].key_worker, shift: famResidents.on_shift_today }));
 	check('family can read the care summary', (await call('GET', `/api/care/${margaretId}/summary`, { token: family.token })).data?.data?.visits.length === 1);
 	check('regular sign-in works with the demo password', (await call('POST', '/api/auth', { body: { email: 'family@example.com', password: 'demo-pass' } })).data?.auth === true);
 	check('the demo resident record cannot sign in', (await call('POST', '/api/auth', { body: { email: 'margaret.okafor@example.com', password: 'demo-pass' } })).status === 403);

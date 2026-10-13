@@ -8,6 +8,7 @@ const CareEntries = require('../../models/CareEntry');
 const { local, instant, addDays, minutes, DATE, TIME } = require('../../utils/time');
 const care = require('../../utils/care');
 
+const Schedule = require('../../models/Schedule');
 const STAFF = ['admin', 'caregiver'];
 const fail = (res, code, msg) => res.status(code).send({ status: false, msg });
 const oops = (res, err) => { console.error(err); fail(res, 500, 'Something went wrong. Please try again.'); };
@@ -78,6 +79,18 @@ const slotOut = (s) => ({
 	entry: s.entry && { _id: s.entry._id, outcome: s.entry.dose.outcome, author: s.entry.author, at: s.entry.at, note: s.entry.note },
 });
 
+// Key workers' names for these residents, and the caregivers on today's rota
+async function careTeam(residents) {
+	const ids = residents.map(r => r.key_worker).filter(Boolean);
+	const workers = ids.length ? await Users.find({ _id: { $in: ids } }).select('first_name last_name status') : [];
+	const byId = Object.fromEntries(workers.map(w => [String(w._id), { _id: w._id, name: care.name(w), status: w.status }]));
+	const today = local().date;
+	const rota = await Schedule.findOne({ start_date: { $lte: today }, end_date: { $gte: today } }).lean();
+	const day = (new Date(today + 'T12:00:00Z').getUTCDay() + 6) % 7; // Monday = 0, as the rota stores it
+	const onShift = (rota?.schedule?.[day] || []).map(s => s.name);
+	return { keyWorker: (r) => (r.key_worker && byId[String(r.key_worker)]) || null, onShift };
+}
+
 //@routes GET api/care/residents
 //@desc Residents the signed-in user can see, with today's medicine round progress for staff
 router.get('/residents', auth, async (req, res) => {
@@ -98,6 +111,7 @@ router.get('/residents', auth, async (req, res) => {
 			CareEntries.aggregate([{ $match: { resident: { $in: ids } } }, { $group: { _id: '$resident', at: { $max: '$at' } } }]),
 		]);
 		const lastAt = Object.fromEntries(latest.map(l => [String(l._id), l.at]));
+		const team = await careTeam(residents);
 		const data = residents.map(r => {
 			const mine = meds.filter(m => String(m.resident) === String(r._id));
 			const slots = care.doseSlots(mine, doses.filter(d => String(d.resident) === String(r._id)), today, today);
@@ -107,9 +121,11 @@ router.get('/residents', auth, async (req, res) => {
 				medicines: mine.filter(m => m.status === 'active').length,
 				today: { ...care.tallyDoses(slots), late },
 				last_entry: lastAt[String(r._id)] || null,
+				key_worker: team.keyWorker(r),
 			};
 		});
-		res.send({ status: true, data });
+		// who is looking after residents today (names only)
+		res.send({ status: true, data, on_shift_today: team.onShift });
 	} catch (err) { oops(res, err); }
 });
 
@@ -147,10 +163,12 @@ router.get('/:id/entries', auth, careAccess('read'), async (req, res) => {
 		const entries = await CareEntries.find(filter).sort({ at: -1, created_at: -1 }).limit(1000).lean();
 		const corrections = await CareEntries.find({ corrects: { $in: entries.map(e => e._id) } }).select('corrects').lean();
 		const replacedBy = Object.fromEntries(corrections.map(c => [String(c.corrects), c._id]));
+		const team = await careTeam([req.resident]);
 		res.send({
 			status: true,
 			data: entries.map(e => ({ ...e, corrected_by: replacedBy[String(e._id)] || null })),
-			resident: residentInfo(req.resident),
+			resident: { ...residentInfo(req.resident), key_worker: team.keyWorker(req.resident) },
+			on_shift_today: team.onShift,
 			from: range.from, to: range.to,
 		});
 	} catch (err) { oops(res, err); }

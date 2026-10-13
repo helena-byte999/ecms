@@ -6,6 +6,7 @@ const ICONS = {
   dose: "medicines", meal: "meal", care: "washHands", wellbeing: "heartbeat",
   activity: "walking", incident: "alert", note: "note", visit: "stethoscope",
 };
+const ROLE_LABEL = { caregiver: "Caregiver", admin: "Manager" };
 export const MOOD_ICONS = { content: "happy", settled: "calm", low: "sad", anxious: "nervous", agitated: "angry", drowsy: "sleepy" };
 
 export const Pill = ({ tone = "muted", children, plain }) => (
@@ -120,6 +121,7 @@ function CareTimeline({ entries, onCorrect }) {
             </div>
             <div className="care-entry__by">
               {e.author?.name}
+              {ROLE_LABEL[e.author?.role] && <small className="care-entry__role">{ROLE_LABEL[e.author?.role]}</small>}
               {onCorrect && !e.corrected_by && e.type !== "visit" && (
                 <div>
                   <button type="button" className="care-link" onClick={() => onCorrect(e)}>
