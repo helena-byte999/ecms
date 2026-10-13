@@ -1,0 +1,31 @@
+name: Keep the demo awake
+
+# Render's free plan puts the API to sleep after 15 minutes without traffic, and the
+# first visitor then waits about a minute. This checks in every 5 minutes during UK
+# and US daytime (06:00-22:55 UTC) so the demo answers straight away.
+#
+# Daytime only on purpose: free plans share 750 server hours a month per Render
+# workspace. Awake all day would use ~744 of them and starve any other free service.
+# If ECMS is your only free Render service, you can change the hours to * (all day).
+#
+# GitHub may run scheduled jobs a few minutes late, and turns them off after 60 days
+# with no activity in the repository (re-enable from the Actions tab).
+
+on:
+  schedule:
+    - cron: "*/5 6-22 * * *"
+  workflow_dispatch: {}
+
+permissions: {}
+
+jobs:
+  ping:
+    name: Check in with the API
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Call the health check
+        run: |
+          curl --silent --show-error --fail --max-time 90 --retry 3 --retry-delay 15 \
+            --output /dev/null --write-out "health %{http_code} in %{time_total}s\n" \
+            https://ecms-api-hxko.onrender.com/api/health

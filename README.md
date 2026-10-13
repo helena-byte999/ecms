@@ -146,6 +146,7 @@ npm test    # API, care records and demo suites against a throwaway MongoDB; no 
 2. **API: Render.** *New → Blueprint*, then pick this repo. [`render.yaml`](render.yaml) sets everything up. Paste the Atlas string into `mongoURLProduction`; leave `FrontEndHostProduction` for step 4.
 3. **Frontend: Vercel.** Import the repo and set **Root Directory** to `client`. Add `REACT_APP_BackEndHost` (your Render URL), `REACT_APP_DEMO=true` and `REACT_APP_CURRENCY`, then deploy.
 4. Back in Render, set `FrontEndHostProduction` to your Vercel URL (no trailing slash) so the API accepts its requests.
+5. **Keeping the demo awake (optional, free).** On Render's free plan the API sleeps after 15 minutes without traffic, and the next visitor waits about a minute. [`keep-awake.yml`](.github/workflows/keep-awake.yml) checks in every 5 minutes from 06:00 to 23:00 UTC. It only runs in the daytime because free plans share 750 server hours a month per Render workspace; change the hours if ECMS is your only free service. Change the URL in that file to your own API.
 
 ### Environment variables
 
