@@ -1,7 +1,7 @@
-import Contracts from "views/client/Contract";
-import Dashboard from "views/client/Dashboard.js";
-import Invoice from "views/client/Invoice.js";
-import UserPage from "views/client/User.js";
+import Contracts from "views/family/Contract";
+import Dashboard from "views/family/Dashboard.js";
+import Invoice from "views/family/Invoice.js";
+import UserPage from "views/family/User.js";
 import ResidentCare from "views/care/ResidentCare.js";
 import HealthIcon from "components/HealthIcon.js";
 
@@ -32,16 +32,17 @@ var routes = [
   {
     path: "/contracts",
     icon_comp: <HealthIcon name="contract" size={22} />,
-    name: "Contract",
+    name: "Contracts",
     component: Contracts,
     layout: "/family",
   },
+  // in the account menu (top right), not the sidebar
   {
     path: "/user-page",
-    icon_comp: <HealthIcon name="profile" size={22} />,
-    name: "User Profile",
+    name: "Your profile",
     component: UserPage,
     layout: "/family",
+    hidden: true,
   },
 ];
 export default routes;

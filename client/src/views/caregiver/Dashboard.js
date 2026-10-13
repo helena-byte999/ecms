@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Notifications from "components/Notification/Notification";
 import StatCard from "components/ui/StatCard.js";
-import { formatDate, formatMoney } from "components/ui/ListUI.js";
+import { formatDate } from "components/ui/ListUI.js";
 import { Link } from "react-router-dom";
 import { care, user } from "data/api";
 import { useAuth } from "contexts/AuthContext";
@@ -58,7 +58,7 @@ function Dashboard() {
     <>
       {notificationStatus === true ? <Notifications details={notificationDetails} /> : null}
       <div className="content">
-        <div className="ecms-stats ecms-stats--3">
+        <div className="ecms-stats ecms-stats--2">
           <StatCard
             label="Medicine round"
             value={r ? (open ? `${open} to give` : "Up to date") : undefined}
@@ -66,19 +66,6 @@ function Dashboard() {
             note={<Link to="/caregiver/care">Open today's round</Link>}
           />
           <StatCard label="Contract" value={contract.value} badge={contract.badge} note="Your current care agreement" />
-          <StatCard
-            label="To pay"
-            value={loaded ? formatMoney(c.outstanding) : undefined}
-            badge={
-              loaded &&
-              (c.overdue
-                ? { tone: "bad", text: `${c.overdue} overdue` }
-                : c.unpaid
-                ? { tone: "neutral", text: `${c.unpaid} unpaid` }
-                : { tone: "ok", text: "All paid" })
-            }
-            note={loaded && `${c.invoices} invoice${c.invoices === 1 ? "" : "s"} in total`}
-          />
         </div>
         <Schedules />
       </div>

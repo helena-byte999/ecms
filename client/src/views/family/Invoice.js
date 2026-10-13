@@ -60,7 +60,7 @@ function Invoices() {
               setPagination((p) => ({ ...p, count: response.data.count }));
             } else {
               setNotificationDetails({
-                msg: "Error Loading Invoices, Please Referesh The Page",
+                msg: "Couldn't load invoices. Please refresh the page.",
                 type: "danger",
               });
               setNotificationStatus(true);

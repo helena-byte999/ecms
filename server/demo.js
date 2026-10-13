@@ -18,16 +18,18 @@ const enabled = () => process.env.DEMO_MODE === 'true';
 const ACCOUNTS = {
 	admin: 'admin@example.com',
 	caregiver: 'caregiver@example.com',
-	client: 'client@example.com',
-	family: 'family@example.com', // Margaret Okafor's daughter
+	client: 'margaret.okafor@example.com', // Margaret Okafor: a resident record (residents don't sign in)
+	family: 'family@example.com', // Margaret's daughter
 };
+// The one-click sign-in buttons
+const SIGN_IN_ROLES = ['admin', 'caregiver', 'family'];
 const isDemoAccount = (user) => !!user && Object.values(ACCOUNTS).includes(user.email);
 
 const RESET_HOUR_UTC = 3;
 // Days of sample care history, enough to compare a 30-day period with the one before
 const HISTORY_DAYS = 60;
 // Bump when the sample data changes, so the next deploy re-seeds straight away
-const SEED_VERSION = 5;
+const SEED_VERSION = 7;
 const DAY = 86400000;
 
 const caregivers = [
@@ -58,10 +60,10 @@ const clients = [
 ];
 
 const medical = [
-	{ blood_group: 'O+', genotype: 'AA', allergy: 'Penicillin', others: 'Type 2 diabetes; needs reminders at mealtimes' },
-	{ blood_group: 'A-', genotype: 'AS', allergy: 'None known', others: 'Mild hearing loss; uses a walking frame' },
-	{ blood_group: 'B+', genotype: 'AA', allergy: 'Shellfish', others: 'High blood pressure; low-salt diet' },
-	{ blood_group: 'AB+', genotype: 'AA', allergy: 'Latex', others: 'Early-stage dementia; prefers morning visits' },
+	{ gp_name: 'Dr Amara Patel, Riverside Surgery', gp_phone: '0113 496 0101', allergy: 'Penicillin', others: 'Type 2 diabetes; needs reminders at mealtimes' },
+	{ gp_name: 'Dr Tom Hughes, Kirkgate Medical Centre', gp_phone: '0113 496 0202', allergy: 'None known', others: 'Mild hearing loss; uses a walking frame' },
+	{ gp_name: 'Dr Amara Patel, Riverside Surgery', gp_phone: '0113 496 0101', allergy: 'Shellfish', others: 'High blood pressure; low-salt diet' },
+	{ gp_name: 'Dr Sara Khan, Headingley Health Centre', gp_phone: '0113 496 0303', allergy: 'Latex', others: 'Early-stage dementia; prefers morning visits' },
 ];
 const relatives = ['Daughter', 'Son', 'Niece', 'Spouse', 'Grandson'];
 
@@ -430,4 +432,4 @@ function start(mongoose) {
 	setInterval(tick, 15 * 60 * 1000).unref();
 }
 
-module.exports = { enabled, ACCOUNTS, isDemoAccount, resetDemoData, topUp, start };
+module.exports = { enabled, ACCOUNTS, SIGN_IN_ROLES, isDemoAccount, resetDemoData, topUp, start };

@@ -71,7 +71,7 @@ function Contracts({ isDashboard }) {
           setNotificationStatus(true);
         } else {
           setNotificationDetails({
-            msg: "Error finding user, Please Referesh The Page",
+            msg: "Couldn't find that person. Please refresh the page.",
             type: "danger",
           });
           setNotificationStatus(true);
@@ -104,7 +104,7 @@ function Contracts({ isDashboard }) {
               });
             } else {
               setNotificationDetails({
-                msg: "Error Loading Contracts, Please Referesh The Page",
+                msg: "Couldn't load contracts. Please refresh the page.",
                 type: "danger",
               });
               setNotificationStatus(true);

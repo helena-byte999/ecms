@@ -41,7 +41,7 @@ function Schedules() {
             }
           } else {
             setNotificationDetails({
-              msg: "Error Loading Schedules, Please Referesh The Page",
+              msg: "Couldn't load the rota. Please refresh the page.",
               type: "danger",
             });
             setNotificationStatus(true);

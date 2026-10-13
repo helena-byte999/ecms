@@ -6,6 +6,8 @@ import { Avatar } from "components/ui/ListUI.js";
 import { Pill } from "components/care/CareTimeline.js";
 import { dayLabel, fullName, timeOf } from "components/care/labels.js";
 import MedicineRound from "views/care/MedicineRound.js";
+import SectionTabs, { careTabs } from "components/ui/SectionTabs.js";
+import { useAuth } from "contexts/AuthContext";
 
 // Residents with today's dose progress and when something was last written down
 export function ResidentGrid({ residents, layout }) {
@@ -45,8 +47,9 @@ export function ResidentGrid({ residents, layout }) {
 // Staff care area: today's medicine round and the residents list
 function CareHome() {
   const location = useLocation();
+  const { userDetail } = useAuth();
   const layout = "/" + location.pathname.split("/")[1];
-  const [tab, setTab] = useState(() => (new URLSearchParams(location.search).get("tab") === "residents" ? "residents" : "round"));
+  const tab = new URLSearchParams(location.search).get("tab") === "residents" ? "residents" : "round";
   const [residents, setResidents] = useState(null);
   const loadResidents = useCallback(() => {
     axios.get(care.residents).then((r) => setResidents(r.data.data)).catch(() => setResidents([]));
@@ -57,14 +60,8 @@ function CareHome() {
     <div className="content">
       <div className="care-card">
         <div className="care-card__head">
-          <h2>Care</h2>
-          <div className="ecms-tabs" role="tablist" aria-label="Care">
-            {[["round", "Today's medicine round"], ["residents", `Residents${residents ? ` (${residents.length})` : ""}`]].map(([k, label]) => (
-              <button key={k} type="button" role="tab" aria-selected={tab === k} className={"ecms-tab" + (tab === k ? " is-active" : "")} onClick={() => setTab(k)}>
-                {label}
-              </button>
-            ))}
-          </div>
+          <h2>{tab === "round" ? "Today's medicine round" : `Residents${residents ? ` (${residents.length})` : ""}`}</h2>
+          <SectionTabs label="Care" tabs={careTabs(layout, userDetail.role === "admin")} />
         </div>
         <div className="care-card__body">
           {tab === "round" ? <MedicineRound layout={layout} onChange={loadResidents} /> : <ResidentGrid residents={residents} layout={layout} />}

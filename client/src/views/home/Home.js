@@ -1,25 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  FiArchive,
   FiArrowRight,
-  FiBarChart2,
   FiCalendar,
   FiCheck,
   FiDownload,
   FiFileText,
-  FiGrid,
   FiLock,
   FiMenu,
   FiSearch,
-  FiSettings,
-  FiSmartphone,
-  FiUserCheck,
-  FiUsers,
   FiX,
 } from "react-icons/fi";
 import { SiExpress, SiMongodb, SiNodedotjs, SiReact, SiRender, SiVercel } from "react-icons/si";
 import Brand from "components/Brand.js";
+import { NavIcon } from "components/navIcons.js";
 import { authenticate } from "data/api";
 import "./home.css";
 // Care-home footage: Pexels video 7522210 (free Pexels licence), compressed to 1600px
@@ -105,58 +99,66 @@ function LazyVideo() {
   );
 }
 
-// Sample figures, matching the demo data
-const MONTHS = ["May", "Jun", "Jul", "Aug", "Sep", "Oct"];
-const PAID = [1, 1, 1, 1, 0.81, 0];
+// Share of doses given each day this week and the week before (sample data)
+const WEEK = [91.7, 95.8, 91.7, 96.2, 96.3, 96.3, 98.1];
+const PREV_WEEK = [95.8, 95.8, 100, 95.8, 91.7, 100, 91.7];
+const DAYS = ["Wed", "Thu", "Fri", "Sat", "Sun", "Mon", "Tue"];
 
-function MiniChart({ tall = false }) {
+function TrendMini({ tall = false }) {
+  const w = 300;
   const h = tall ? 150 : 96;
-  const bar = tall ? 14 : 9;
+  const lo = 80;
+  const x = (i) => 10 + (i / (WEEK.length - 1)) * (w - 20);
+  const y = (v) => 6 + (1 - (v - lo) / (100 - lo)) * (h - 12);
+  const line = (vals) => vals.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const area = `${line(WEEK)}L${x(WEEK.length - 1)},${h}L${x(0)},${h}Z`;
   return (
-    <svg className="lb-chart" viewBox={`0 0 300 ${h + 22}`} preserveAspectRatio="none" aria-hidden="true">
+    <svg className="lb-chart" viewBox={`0 0 ${w} ${h + 22}`} preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="lb-area" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#0a9e94" stopOpacity="0.22" />
+          <stop offset="100%" stopColor="#0a9e94" stopOpacity="0" />
+        </linearGradient>
+      </defs>
       {[0, 0.5, 1].map((t) => (
-        <line key={t} x1="0" x2="300" y1={4 + (h - 4) * t} y2={4 + (h - 4) * t} className="lb-chart__grid" />
+        <line key={t} x1="0" x2={w} y1={6 + (h - 12) * t} y2={6 + (h - 12) * t} className="lb-chart__grid" />
       ))}
-      {MONTHS.map((m, i) => {
-        const cx = 25 + i * 50;
-        const paid = (h - 4) * 0.92 * PAID[i];
-        const inv = (h - 4) * 0.92;
-        return (
-          <g key={m}>
-            <rect x={cx - bar - 1} y={h - inv} width={bar} height={inv} rx="2.5" fill="#0a9e94" />
-            {paid > 0 && <rect x={cx + 1} y={h - paid} width={bar} height={paid} rx="2.5" fill="#2a78d6" />}
-            <text x={cx} y={h + 16} textAnchor="middle">{m}</text>
-          </g>
-        );
-      })}
+      <path d={area} fill="url(#lb-area)" />
+      <path d={line(PREV_WEEK)} fill="none" stroke="#b9c3cd" strokeWidth="2" strokeDasharray="5 4" />
+      <path d={line(WEEK)} fill="none" stroke="#0a9e94" strokeWidth="2.5" strokeLinejoin="round" />
+      {WEEK.map((v, i) => <circle key={i} cx={x(i)} cy={y(v)} r="3" fill="#fff" stroke="#0a9e94" strokeWidth="2" />)}
+      {DAYS.map((d, i) => <text key={d} x={x(i)} y={h + 16} textAnchor="middle">{d}</text>)}
     </svg>
   );
 }
 
+// Today's medicine round (sample data): [time, resident, medicine, status, tone]
+const ROUND = [
+  ["08:00", "Margaret Okafor", "Amoxicillin 500 mg", "Given", "ok"],
+  ["08:00", "Harold Brennan", "Sertraline 50 mg", "Refused", "warn"],
+  ["12:00", "Agnes Mensah", "Calcium and vitamin D", "Due", "neutral"],
+  ["14:00", "Margaret Okafor", "Amoxicillin 500 mg", "Later", "muted"],
+];
+
 // The admin dashboard, drawn in HTML so it stays sharp and light (sample data)
 function DashboardPreview() {
-  const nav = [
-    [FiGrid, "Dashboard"],
-    [FiUsers, "Clients"],
-    [FiUserCheck, "Caregivers"],
-    [FiFileText, "Contracts"],
-    [FiCalendar, "Rotas"],
-    [FiBarChart2, "Invoices"],
-    [FiSettings, "Settings"],
-  ];
+  const nav = ["home:Dashboard", "heartbeat:Care", "people:People", "contract:Contracts", "calendar:Rota", "bills:Invoices"];
   return (
-    <div className="lb-frame" role="img" aria-label="The ECMS admin dashboard: people, contracts ending soon, money outstanding and an invoiced-versus-paid chart">
+    <div className="lb-frame" role="img" aria-label="The ECMS admin dashboard: doses given this week, incidents, residents, money outstanding, the dose trend and today's medicine round">
       <span className="lb-frame__dot lb-frame__dot--l" aria-hidden="true" />
       <span className="lb-frame__dot lb-frame__dot--r" aria-hidden="true" />
       <div className="lb-app" aria-hidden="true">
         <aside className="lb-app__side">
           <Brand compact light />
           <ul>
-            {nav.map(([Icon, label], i) => (
-              <li key={label} className={i === 0 ? "is-active" : ""}>
-                <Icon /> {label}
-              </li>
-            ))}
+            {nav.map((n, i) => {
+              const [icon, label] = n.split(":");
+              return (
+                <li key={label} className={i === 0 ? "is-active" : ""}>
+                  <NavIcon name={icon} size={16} /> {label}
+                </li>
+              );
+            })}
           </ul>
           <div className="lb-app__me">
             <span className="lb-avatar lb-avatar--light">OB</span>
@@ -169,37 +171,31 @@ function DashboardPreview() {
         <div className="lb-app__main">
           <div className="lb-app__bar">
             <div>
-              <small>Good morning, Olivia</small>
-              <strong>Dashboard</strong>
+              <small>Today: 3 doses due, 2 contracts ending soon</small>
+              <strong>Welcome back, Olivia</strong>
             </div>
             <span className="lb-app__search"><FiSearch /> Search people</span>
           </div>
           <div className="lb-app__stats">
-            <div><small>Clients</small><strong>12</strong><span>4 without a contract</span></div>
-            <div><small>Caregivers</small><strong>8</strong><span>6 active, 1 on leave</span></div>
-            <div><small>Contracts ending</small><strong>2</strong><span className="is-warn">in the next 30 days</span></div>
+            <div><small>Doses given</small><strong>93.9%</strong><span>this week</span></div>
+            <div><small>Incidents</small><strong>2</strong><span className="is-warn">1 more than last week</span></div>
+            <div><small>Residents</small><strong>12</strong><span>6 caregivers on staff</span></div>
             <div><small>Outstanding</small><strong>£29,700</strong><span className="is-bad">2 invoices overdue</span></div>
           </div>
           <div className="lb-app__panels">
             <div className="lb-app__panel">
               <div className="lb-app__panel-head">
-                <strong>Invoiced vs paid</strong>
-                <span className="lb-legend"><i className="lb-sw lb-sw--teal" />Invoiced <i className="lb-sw lb-sw--blue" />Paid</span>
+                <strong>Doses given, last 7 days</strong>
+                <span className="lb-legend"><i className="lb-sw lb-sw--teal" />This week <i className="lb-sw lb-sw--grey" />Week before</span>
               </div>
-              <MiniChart tall />
+              <TrendMini tall />
             </div>
             <div className="lb-app__panel">
-              <div className="lb-app__panel-head"><strong>Contracts needing attention</strong></div>
-              {[
-                ["WS", "Winifred Shaw", "Ends in 20 days", "warn"],
-                ["LF", "Leonard Fitzgerald", "Ends in 20 days", "warn"],
-                ["HB", "Harold Brennan", "Expired", "bad"],
-                ["DH", "Dorothy Hughes", "Expired", "bad"],
-                ["BE", "Beatrice Eze", "No contract", "muted"],
-              ].map(([ini, name, state, tone]) => (
-                <div className="lb-app__row" key={name}>
-                  <span className="lb-avatar">{ini}</span>
-                  <span className="lb-app__name">{name}</span>
+              <div className="lb-app__panel-head"><strong>Today's medicine round</strong></div>
+              {ROUND.map(([time, who, med, state, tone]) => (
+                <div className="lb-app__row" key={time + who + med}>
+                  <span className="lb-time">{time}</span>
+                  <span className="lb-app__name">{who}<small>{med}</small></span>
                   <span className={"lb-pill lb-pill--" + tone}>{state}</span>
                 </div>
               ))}
@@ -211,21 +207,11 @@ function DashboardPreview() {
   );
 }
 
-const ROTA = [
-  ["Mon", ["GA", "TR", "PN", "DO"]],
-  ["Tue", ["SC", "YB", "GA", "TR"]],
-  ["Wed", ["PN", "DO", "SC", "YB"]],
-  ["Thu", ["GA", "TR", "PN", "DO"]],
-  ["Fri", ["SC", "YB", "GA", "TR"]],
-  ["Sat", ["PN", "DO", "SC", "YB"]],
-  ["Sun", ["GA", "TR", "PN", "DO"]],
-];
-
 const extras = [
-  [FiLock, "Private by default", "Everyone sees only their own records, and passwords are stored hashed."],
-  [FiArchive, "History is kept", "Deactivate people instead of deleting them, so past rotas and invoices stay."],
-  [FiSmartphone, "Works on any device", "Admins on a laptop at the desk, families on a phone at home."],
-];
+  [FiFileText, "Contracts and invoices", "Contracts flagged 30 days before they end; invoices as PDF, with paid, unpaid and overdue at a glance."],
+  [FiCalendar, "A fair rota in one click", "Pick a week and how many staff a day; shifts are shared evenly between active caregivers."],
+  [FiLock, "Private by default", "Everyone sees only what their role allows, and deactivated people keep their history."],
+]
 
 const stack = [
   [SiReact, "React"],
@@ -263,7 +249,6 @@ function Home() {
           <nav className={"lb-nav__links" + (menuOpen ? " is-open" : "")} aria-label="Main">
             <a href="#features" onClick={closeMenu}>Features</a>
             <a href="#roles" onClick={closeMenu}>Who it's for</a>
-            <a href="#how" onClick={closeMenu}>How it works</a>
             <a href={DOCS_URL} target="_blank" rel="noopener noreferrer" onClick={closeMenu}>
               Requirements & UML
             </a>
@@ -293,8 +278,8 @@ function Home() {
               organised in one calm place
             </h1>
             <p>
-              Contracts, rotas, invoices and care profiles for care-home staff,
-              caregivers and families.
+              Medicine rounds, care records and updates for families, with the
+              contracts, rotas and invoices behind them.
             </p>
             <div className="lb-hero__actions">
               <Link to="/login" className="lb-btn lb-btn--primary">
@@ -324,26 +309,22 @@ function Home() {
         <section id="features" className="lb-section">
           <div className="lb-wrap">
             <div className="lb-head">
-              <h2>Everything a care home tracks, in one place</h2>
+              <h2>Care recorded as it happens</h2>
               <p>
-                The paperwork around each resident (contracts, rotas and bills) with
-                the warnings that stop things slipping.
+                Medicines, meals, wellbeing and incidents are written down on the round
+                and shared with the people who need them.
               </p>
             </div>
 
             <div className="lb-bento lb-bento--a">
               <article className="lb-card">
-                <h3>Contracts that need attention</h3>
-                <p>See which contracts end in the next 30 days, which have expired, and who has none.</p>
-                <div className="lb-vis lb-vis--list" aria-hidden="true">
-                  {[
-                    ["WS", "Winifred Shaw", "Ends in 20 days", "warn"],
-                    ["AK", "Arthur Kowalski", "Valid", "ok"],
-                    ["HB", "Harold Brennan", "Expired", "bad"],
-                  ].map(([ini, name, state, tone]) => (
-                    <div className="lb-vis__row" key={name}>
-                      <span className="lb-avatar">{ini}</span>
-                      <span>{name}<small>Residential care agreement</small></span>
+                <h3>Today's medicine round</h3>
+                <p>Every dose due across the home. One tap for given; refused or missed with a note. Late doses stand out.</p>
+                <div className="lb-vis lb-vis--shifts lb-vis--times" aria-hidden="true">
+                  {ROUND.slice(0, 3).map(([time, who, med, state, tone]) => (
+                    <div key={time + who}>
+                      <strong>{time}</strong>
+                      <span>{who}<small>{med}</small></span>
                       <span className={"lb-pill lb-pill--" + tone}>{state}</span>
                     </div>
                   ))}
@@ -351,51 +332,47 @@ function Home() {
               </article>
 
               <article className="lb-card">
-                <h3>Invoiced vs paid, month by month</h3>
-                <p>Paid, unpaid and overdue at a glance, with a six-month chart for the home.</p>
-                <div className="lb-vis lb-vis--chart" aria-hidden="true">
-                  <div className="lb-vis__kpis">
-                    <span><small>Outstanding</small><strong>£29,700</strong></span>
-                    <span><small>Overdue</small><strong className="is-bad">2</strong></span>
-                  </div>
-                  <MiniChart />
+                <h3>A care log families can read</h3>
+                <p>Each relative has their own login to see meals, medicines and how their family member is doing.</p>
+                <div className="lb-vis lb-vis--shifts lb-vis--times" aria-hidden="true">
+                  {[["08:30", "Breakfast", "Ate all · 200 ml to drink"], ["10:15", "Wellbeing", "Content · 36.9 °C"], ["14:30", "Activity", "Chair exercises"]].map(([time, what, detail]) => (
+                    <div key={time}>
+                      <strong>{time}</strong>
+                      <span>{what}<small>{detail}</small></span>
+                    </div>
+                  ))}
                 </div>
               </article>
             </div>
 
             <div className="lb-bento lb-bento--b">
               <article className="lb-card">
-                <h3>A fair rota in one click</h3>
-                <p>Pick a week and how many people a day. Shifts are shared evenly between active staff.</p>
-                <div className="lb-vis lb-vis--rota" aria-hidden="true">
-                  {ROTA.map(([day, people]) => (
-                    <div key={day}>
-                      <small>{day}</small>
-                      {people.map((p, i) => (
-                        <span key={i} className={"lb-chip lb-chip--" + (p.charCodeAt(0) % 4)}>{p}</span>
-                      ))}
-                    </div>
-                  ))}
+                <h3>Care analytics</h3>
+                <p>Doses given, refusals, incidents and illness, each against the previous period.</p>
+                <div className="lb-vis lb-vis--chart" aria-hidden="true">
+                  <div className="lb-vis__kpis">
+                    <span><small>Doses given</small><strong>93.3%</strong></span>
+                    <span><small>vs previous 30 days</small><strong className="is-ok">+2.7 pts</strong></span>
+                  </div>
+                  <TrendMini />
                 </div>
               </article>
 
               <article className="lb-card">
-                <h3>Every invoice as a PDF</h3>
-                <p>Families download their bills; admins mark them paid in one click.</p>
+                <h3>Doctor's visits update the record</h3>
+                <p>Record the visit once: new medicines go on the round and allergies and conditions update, with a before-and-after trail.</p>
                 <div className="lb-vis lb-vis--invoice" aria-hidden="true">
                   <div className="lb-doc lb-doc--back" />
                   <div className="lb-doc">
                     <div className="lb-doc__top">
-                      <Brand compact />
-                      <span className="lb-pill lb-pill--ok">Paid</span>
+                      <strong>Dr Amara Patel, GP</strong>
+                      <span className="lb-pill lb-pill--ok">Records updated</span>
                     </div>
-                    <small>Invoice for</small>
-                    <strong>Margaret Okafor</strong>
-                    <div className="lb-doc__line"><span>September care package</span><span>£2,400.00</span></div>
-                    <div className="lb-doc__line lb-doc__line--muted"><span>Due 15 Sep</span><span>Paid 10 Sep</span></div>
-                    <div className="lb-doc__total"><span>Total</span><strong>£2,400.00</strong></div>
+                    <small>Margaret Okafor · cough and a raised temperature</small>
+                    <div className="lb-doc__line"><span>Started</span><span>Amoxicillin 500 mg, 7 days</span></div>
+                    <div className="lb-doc__line lb-doc__line--muted"><span>Conditions</span><span>+ chest infection</span></div>
+                    <div className="lb-doc__total"><span>Next</span><strong>Review in 7 days</strong></div>
                   </div>
-                  <span className="lb-doc__btn"><FiDownload /> Download PDF</span>
                 </div>
               </article>
             </div>
@@ -427,31 +404,31 @@ function Home() {
             <div className="lb-bento lb-bento--c">
               <article className="lb-card">
                 <h3>Administrators</h3>
-                <p>Add people, manage contracts, build rotas and send invoices.</p>
+                <p>Run the home: people, contracts, rotas and invoices, plus care analytics.</p>
                 <div className="lb-vis lb-vis--tiles" aria-hidden="true">
-                  <span><small>Clients</small><strong>12</strong></span>
-                  <span><small>Caregivers</small><strong>8</strong></span>
-                  <span><small>Ending soon</small><strong className="is-warn">2</strong></span>
+                  <span><small>Doses given</small><strong>93.9%</strong></span>
+                  <span><small>Incidents</small><strong className="is-warn">2</strong></span>
+                  <span><small>Residents</small><strong>12</strong></span>
                   <span><small>Overdue</small><strong className="is-bad">2</strong></span>
                 </div>
                 <Link to="/login" className="lb-link">Try as administrator <FiArrowRight aria-hidden="true" /></Link>
               </article>
               <article className="lb-card">
                 <h3>Caregivers</h3>
-                <p>See this week's shifts and who else is on each day.</p>
-                <div className="lb-vis lb-vis--shifts" aria-hidden="true">
-                  {[["Mon", "You, Tomás, Priya, Daniel"], ["Thu", "You, Tomás, Priya, Daniel"], ["Sun", "You, Tomás, Priya, Daniel"]].map(([d, who]) => (
-                    <div key={d}><strong>{d}</strong><span>{who}</span></div>
+                <p>Give medicines on the round, write the care log and record doctor's visits.</p>
+                <div className="lb-vis lb-vis--shifts lb-vis--times" aria-hidden="true">
+                  {[["08:00", "Metformin 500 mg", "Given", "ok"], ["12:00", "Calcium and vitamin D", "Due", "neutral"], ["20:00", "Donepezil 10 mg", "Later", "muted"]].map(([t, med, state, tone]) => (
+                    <div key={t}><strong>{t}</strong><span>{med}</span><span className={"lb-pill lb-pill--" + tone}>{state}</span></div>
                   ))}
                 </div>
                 <Link to="/login" className="lb-link">Try as caregiver <FiArrowRight aria-hidden="true" /></Link>
               </article>
               <article className="lb-card">
-                <h3>Clients & families</h3>
-                <p>Check the contract, see what's due and download every invoice.</p>
+                <h3>Families</h3>
+                <p>Follow a relative's care, medicines, contract and invoices with their own login.</p>
                 <div className="lb-vis lb-vis--due" aria-hidden="true">
-                  <div><small>To pay</small><span className="lb-pill lb-pill--warn">Due 15 Oct</span></div>
-                  <strong>£2,400<small>.00</small></strong>
+                  <div><small>Medicines today</small><span className="lb-pill lb-pill--ok">On track</span></div>
+                  <strong>3 of 3<small> given</small></strong>
                   <span className="lb-doc__btn lb-doc__btn--inline"><FiDownload /> October invoice</span>
                 </div>
                 <Link to="/login" className="lb-link">Try as family member <FiArrowRight aria-hidden="true" /></Link>
@@ -463,7 +440,7 @@ function Home() {
                 <h3>Secure by default</h3>
                 <p>Checks on every request, not just hidden buttons.</p>
                 <ul className="lb-checks">
-                  {["Role checked on every request", "Hashed passwords", "Rate-limited sign-in", "Signed, expiring sessions"].map((c) => (
+                  {["Role checked on every request", "Care records can't be deleted, only corrected", "Hashed passwords and rate-limited sign-in", "Signed, expiring sessions"].map((c) => (
                     <li key={c}><FiCheck aria-hidden="true" /> {c}</li>
                   ))}
                 </ul>
@@ -475,65 +452,6 @@ function Home() {
                 </div>
                 <LazyVideo />
               </article>
-            </div>
-          </div>
-        </section>
-
-        <section className="lb-statement">
-          <div className="lb-wrap">
-            <p>
-              A care home's records of clients, caregivers, contracts, rotas and billing
-              didn't keep up as it grew. <span>ECMS puts them in one place, with the right
-              view for each person.</span>
-            </p>
-            <a href={DOCS_URL + "#problem"} target="_blank" rel="noopener noreferrer" className="lb-statement__by">
-              <Brand compact />
-              <span>
-                The problem we set out to solve
-                <small>Original requirements, 2022</small>
-              </span>
-            </a>
-          </div>
-        </section>
-
-        <section id="how" className="lb-section lb-how">
-          <div className="lb-wrap">
-            <p className="lb-eyebrow lb-eyebrow--center">How it works</p>
-            <h2>Three simple steps</h2>
-            <p className="lb-how__lead">From a new resident to a paid invoice.</p>
-            <ol className="lb-steps">
-              <li>
-                <span className="lb-steps__n">1</span>
-                <div className="lb-steps__art" aria-hidden="true">
-                  <span className="lb-mini"><i className="lb-avatar">MO</i><b /><b /></span>
-                  <span className="lb-mini lb-mini--tilt"><i className="lb-avatar">GA</i><b /><b /></span>
-                </div>
-                <h3>Add residents and staff</h3>
-                <p>Care profiles, next of kin, medical notes and contracts.</p>
-              </li>
-              <li>
-                <span className="lb-steps__n">2</span>
-                <div className="lb-steps__art" aria-hidden="true">
-                  <span className="lb-mini lb-mini--cal">
-                    {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <i key={i}>{d}</i>)}
-                    {Array.from({ length: 7 }).map((_, i) => <b key={i} />)}
-                  </span>
-                </div>
-                <h3>Generate the rota</h3>
-                <p>Choose the week and staff per day; ECMS shares it out fairly.</p>
-              </li>
-              <li>
-                <span className="lb-steps__n">3</span>
-                <div className="lb-steps__art" aria-hidden="true">
-                  <span className="lb-mini lb-mini--doc"><em className="lb-pill lb-pill--ok">Paid</em><b /><b /></span>
-                  <span className="lb-mini lb-mini--doc lb-mini--tilt"><em className="lb-pill lb-pill--warn">Unpaid</em><b /><b /></span>
-                </div>
-                <h3>Invoice and get paid</h3>
-                <p>Send monthly invoices and track what's paid, unpaid and overdue.</p>
-              </li>
-            </ol>
-            <div className="lb-center">
-              <Link to="/login" className="lb-btn lb-btn--outline">{cta}</Link>
             </div>
           </div>
         </section>
@@ -610,7 +528,6 @@ function Home() {
               <h3>Product</h3>
               <a href="#features">Features</a>
               <a href="#roles">Who it's for</a>
-              <a href="#how">How it works</a>
               <Link to="/login">{cta}</Link>
             </nav>
             <nav aria-label="Project">

@@ -1,6 +1,5 @@
 import Contracts from "views/caregiver/Contract";
 import Dashboard from "views/caregiver/Dashboard.js";
-import Invoice from "views/caregiver/Invoice.js";
 import UserPage from "views/caregiver/User.js";
 import CareHome from "views/care/CareHome.js";
 import ResidentCare from "views/care/ResidentCare.js";
@@ -29,25 +28,19 @@ var routes = [
     layout: "/caregiver",
   },
   {
-    path: "/invoices",
-    icon_comp: <HealthIcon name="bills" size={22} />,
-    name: "Invoices",
-    component: Invoice,
-    layout: "/caregiver",
-  },
-  {
     path: "/contracts",
     icon_comp: <HealthIcon name="contract" size={22} />,
     name: "Contracts",
     component: Contracts,
     layout: "/caregiver",
   },
+  // in the account menu (top right), not the sidebar
   {
     path: "/user-page",
-    icon_comp: <HealthIcon name="profile" size={22} />,
-    name: "User Profile",
+    name: "Your profile",
     component: UserPage,
     layout: "/caregiver",
+    hidden: true,
   },
 ];
 export default routes;

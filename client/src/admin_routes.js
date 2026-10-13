@@ -14,12 +14,20 @@ import HealthIcon from "components/HealthIcon.js";
 var routes = [
   {
     path: "/dashboard",
-    icon_comp: <HealthIcon name="home" size={22} />,
     name: "Dashboard",
+    icon_comp: <HealthIcon name="home" size={22} />,
     component: Dashboard,
     layout: "/admin",
   },
-  // a resident's care record (not in the menu; listed before /care so it matches first)
+  // Care: today's round and residents (tabs), analytics, and each resident's record.
+  // More specific paths come first so they match before /care.
+  {
+    path: "/care/analytics",
+    name: "Care analytics",
+    component: CareAnalytics,
+    layout: "/admin",
+    hidden: true,
+  },
   {
     path: "/care/:id",
     name: "Care",
@@ -29,66 +37,61 @@ var routes = [
   },
   {
     path: "/care",
-    icon_comp: <HealthIcon name="heartbeat" size={22} />,
     name: "Care",
+    icon_comp: <HealthIcon name="heartbeat" size={22} />,
     component: CareHome,
     layout: "/admin",
   },
+  // People: residents, caregivers and admins (tabs)
   {
-    path: "/analytics",
-    icon_comp: <HealthIcon name="chartLine" size={22} />,
-    name: "Care analytics",
-    component: CareAnalytics,
-    layout: "/admin",
-  },
-  {
-    path: "/invoice",
-    icon_comp: <HealthIcon name="bills" size={22} />,
-    name: "Invoice",
-    component: Invoice,
-    layout: "/admin",
-  },
-  {
-    path: "/caregiver",
-    icon_comp: <HealthIcon name="nurse" size={22} />,
-    name: "Care Givers",
+    path: "/people/caregivers",
+    name: "Caregivers",
     component: CareGiver,
     layout: "/admin",
+    hidden: true,
   },
   {
-    path: "/clients",
-    icon_comp: <HealthIcon name="elderly" size={22} />,
-    name: "Clients",
+    path: "/people/admins",
+    name: "Admins",
+    component: TeamAdmins,
+    layout: "/admin",
+    hidden: true,
+  },
+  {
+    path: "/people",
+    name: "People",
+    icon_comp: <HealthIcon name="people" size={22} />,
     component: Client,
     layout: "/admin",
   },
   {
-    path: "/contract",
+    path: "/contracts",
+    name: "Contracts",
     icon_comp: <HealthIcon name="contract" size={22} />,
-    name: "Contract",
     component: Contract,
     layout: "/admin",
   },
   {
-    path: "/schedule",
+    path: "/rota",
+    name: "Rota",
     icon_comp: <HealthIcon name="calendar" size={22} />,
-    name: "Schedule",
     component: Schedule,
     layout: "/admin",
   },
   {
-    path: "/team",
-    icon_comp: <HealthIcon name="people" size={22} />,
-    name: "Team admins",
-    component: TeamAdmins,
+    path: "/invoices",
+    name: "Invoices",
+    icon_comp: <HealthIcon name="bills" size={22} />,
+    component: Invoice,
     layout: "/admin",
   },
+  // in the account menu (top right), not the sidebar
   {
     path: "/user-page",
-    icon_comp: <HealthIcon name="profile" size={22} />,
-    name: "User Profile",
+    name: "Your profile",
     component: UserPage,
     layout: "/admin",
+    hidden: true,
   },
 ];
 export default routes;

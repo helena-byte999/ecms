@@ -11,7 +11,7 @@ import {
   FiEyeOff,
   FiFileText,
 } from "react-icons/fi";
-import HealthIcon from "components/HealthIcon.js";
+import { NavIcon } from "components/navIcons.js";
 import Brand, { BrandMark } from "components/Brand.js";
 import { authenticate } from "../../data/api";
 import { useAuth } from "../../contexts/AuthContext";
@@ -28,19 +28,19 @@ const DEMO = process.env.REACT_APP_DEMO === "true";
 const demoRoles = [
   {
     role: "admin",
-    icon: <HealthIcon name="hospital" size={20} />,
+    icon: <NavIcon name="hospital" size={20} />,
     title: "Administrator",
     text: "Manage people, contracts, rotas and invoices",
   },
   {
     role: "caregiver",
-    icon: <HealthIcon name="nurse" size={20} />,
+    icon: <NavIcon name="nurse" size={20} />,
     title: "Caregiver",
     text: "See this week's shifts and your contract",
   },
   {
     role: "family",
-    icon: <HealthIcon name="family" size={20} />,
+    icon: <NavIcon name="family" size={20} />,
     title: "Family member",
     text: "Follow Margaret's care, medicines and invoices",
   },

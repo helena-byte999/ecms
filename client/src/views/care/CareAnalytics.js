@@ -9,6 +9,7 @@ import { INCIDENTS, MOODS, SEVERITY, daysAgo, timeOf, ymd } from "components/car
 import { reportCsv, reportPdf } from "components/care/careExport.js";
 import { BarList, ChartCard, Delta, KpiStrip, SegmentBar, SeriesTotals, Sparkline, StackedBars, TrendChart, fmtPct } from "components/care/charts.js";
 import { INCIDENT_COLORS, MOOD_COLORS, OUTCOME_SERIES, PALETTE } from "components/care/palette.js";
+import SectionTabs, { careTabs } from "components/ui/SectionTabs.js";
 
 const PRESETS = [[7, "7 days"], [30, "30 days"], [90, "90 days"]];
 const dayLabel = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric" });
@@ -83,6 +84,7 @@ function CareAnalytics() {
 
   return (
     <div className="content">
+      <SectionTabs label="Care" tabs={careTabs("/admin", true)} />
       <div className="ca-head">
         <div>
           <h2>Care analytics</h2>
@@ -216,8 +218,22 @@ function CareAnalytics() {
                 )}
               />
             </ChartCard>
-            <ChartCard icon="nurse" title="Staff activity" sub="Care entries written">
-              <BarList items={r.caregivers.slice(0, 6).map((c) => ({ label: c.name, value: c.entries, sub: `${c.doses} doses recorded` }))} />
+            <ChartCard icon="medicines" title="Refusals by medicine" sub="Refused or missed doses; worth raising at a medication review">
+              {r.medicines.some((m) => m.refused + m.missed > 0) ? (
+                <BarList
+                  items={r.medicines
+                    .filter((m) => m.refused + m.missed > 0)
+                    .slice(0, 6)
+                    .map((m) => ({
+                      label: m.name,
+                      value: m.refused + m.missed,
+                      color: PALETTE.amber,
+                      sub: `${m.refused} refused, ${m.missed} missed · ${fmtPct(m.completion)} given · ${m.residents} resident${m.residents === 1 ? "" : "s"}`,
+                    }))}
+                />
+              ) : (
+                <p className="ca-muted">No refused or missed doses in this period.</p>
+              )}
             </ChartCard>
           </div>
 

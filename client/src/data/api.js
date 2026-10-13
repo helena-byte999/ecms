@@ -1,29 +1,8 @@
 const BackEnd = process.env.REACT_APP_BackEndHost;
-export const caregiver = {
-  //take in a body with data
-  //data :
-  addCareGiver: `${BackEnd}/api/caregiver/add_caregiver`,
-  updateCareGiver: `${BackEnd}/api/caregiver/update_caregiver`,
-  //---------------------------------------------------------------------------------------------------
-
-  showCareGiver: `${BackEnd}/api/caregiver/show_caregivers`,
-  //---------------------------------------------------------------------------------------------------
-
-  showAllCareGivers: `${BackEnd}/api/caregiver/show_all_caregivers`,
-  //---------------------------------------------------------------------------------------------------
-};
+// Only addresses the API actually serves (see server/routes/api)
 export const schedule = {
-  //take in a body with data
-  //data :
   addSchedule: `${BackEnd}/api/schedule/add_schedule`,
-  updateSchedule: `${BackEnd}/api/schedule/update_schedule`,
-  //---------------------------------------------------------------------------------------------------
-
-  showSchedule: `${BackEnd}/api/schedule/show_schedule`,
-  //---------------------------------------------------------------------------------------------------
-
   showAllSchedules: `${BackEnd}/api/schedule/show_all_schedules`,
-  //---------------------------------------------------------------------------------------------------
 };
 
 export const invoice_api = {
@@ -46,7 +25,6 @@ export const user = {
   getCounts: `${BackEnd}/api/user/get_counts`,
   showUsers: `${BackEnd}/api/user/show_users`,
   showAllContracts: `${BackEnd}/api/user/show_all_contracts`,
-  showAllUsers: `${BackEnd}/api/user/show_all_users`,
   showUserByEmail: `${BackEnd}/api/user/show_user_by_email`,
   setStatus: `${BackEnd}/api/user/set_status`,
   // family members linked to a resident: GET /family/:residentId
@@ -62,37 +40,14 @@ export const care = {
   resident: `${BackEnd}/api/care`,
 };
 export const authenticate = {
-  //takes in token as http cookie
-  //data : [verifyToken]
-  verifyAcct: `${BackEnd}/api/user/verifyAccount/`,
-
-  //takes in password + token as http cookie
-  //data : [verifyToken]
-  passwordReset: `${BackEnd}/api/user/passwordReset/`,
-
-  //takes http cookie token and checks if a user is logged in
-  //data : requires token to be set - user login
+  // is the saved token still valid?
   loggedIn: `${BackEnd}/api/user/loggedIn`,
-
-  //sends a reset link to specified user email
-  //data : email
-  forgotPassword: `${BackEnd}/api/user/forgotPassword`,
-
-  //destroys cookie
-  logout: `${BackEnd}/api/user/logout`,
-
-  //destroys cookie
-  addUser: `${BackEnd}/api/user/add_user`,
-
-  //give logged in user data
+  // the signed-in user (family members also get their resident)
   getUserData: `${BackEnd}/api/auth/user`,
-
-  //---------
+  // sign in with email and password
   userAuth: `${BackEnd}/api/auth`,
-
   // one-click demo sign-in ({ role }), demo deployments only
   demoAuth: `${BackEnd}/api/auth/demo`,
-
   // change your own password ({ current_password, new_password })
   changePassword: `${BackEnd}/api/auth/change_password`,
 };

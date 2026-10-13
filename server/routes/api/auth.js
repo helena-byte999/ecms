@@ -42,6 +42,10 @@ router.post('/', loginLimiter, async (req, res) => {
         if (user.status === 'in-active') {
             return res.status(403).send({ msg: 'This account has been deactivated. Please contact your care administrator.', auth: false });
         }
+        // residents are records, not logins; their family members have their own accounts
+        if (user.role === 'client') {
+            return res.status(403).send({ msg: "Residents don't sign in themselves. Family members have their own login: ask the care home for one.", auth: false });
+        }
 
         //Validating Password
         const isMatch = await bcrypt.compare(password, user.password); //comparing passwords
@@ -60,12 +64,12 @@ router.post('/', loginLimiter, async (req, res) => {
 
 
 //@routes POST api/auth/demo
-//@desc One-click sign-in to a demo account ({ role: admin | caregiver | client | family }), demo mode only
+//@desc One-click sign-in to a demo account ({ role: admin | caregiver | family }), demo mode only
 //@access Public
 router.post('/demo', loginLimiter, async (req, res) => {
     if (!demo.enabled()) return res.status(404).send({ msg: 'Demo mode is off.', auth: false });
-    const email = demo.ACCOUNTS[req.body.role];
-    if (!email) return res.status(400).send({ msg: 'Choose admin, caregiver, client or family.', auth: false });
+    const email = demo.SIGN_IN_ROLES.includes(req.body.role) && demo.ACCOUNTS[req.body.role];
+    if (!email) return res.status(400).send({ msg: 'Choose admin, caregiver or family.', auth: false });
     try {
         let user = await User.findOne({ email });
         // demo data missing (e.g. a fresh database): seed it now
@@ -119,7 +123,7 @@ router.get('/user', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-password').lean();
         // a deactivated account loses access even with a token that hasn't expired yet
-        if (!user || user.status === 'in-active') return res.status(403).json({ msg: 'Account unavailable.' });
+        if (!user || user.status === 'in-active' || user.role === 'client') return res.status(403).json({ msg: 'Account unavailable.' });
         if (user.role === 'family') {
             user.resident = await User.findOne({ _id: user.resident, role: 'client' }).select('first_name last_name email').lean();
         }

@@ -1355,6 +1355,9 @@ textarea.form-control {
   &--3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+  &--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .ecms-stat {
   display: flex;
@@ -1564,7 +1567,8 @@ textarea.form-control {
 }
 @media (max-width: 767px) {
   .ecms-stats,
-  .ecms-stats--3 {
+  .ecms-stats--3,
+  .ecms-stats--2 {
     grid-template-columns: 1fr;
   }
 }
@@ -1750,5 +1754,21 @@ textarea.form-control {
   .ecms-loader__mark::before,
   .ecms-beat .ecms-brand__heart {
     animation: none;
+  }
+}
+
+// Tabs that link between pages of one menu section (components/ui/SectionTabs.js)
+.ecms-sectiontabs {
+  margin: 0 0 16px;
+}
+a.ecms-tab {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  text-decoration: none !important;
+  color: var(--muted);
+  &:hover,
+  &.is-active {
+    color: var(--ink);
   }
 }

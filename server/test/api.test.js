@@ -65,29 +65,36 @@ const person = (email, role) => ({
 	check('duplicate email rejected', dup.status === 400);
 	await call('POST', '/api/user/add_user', { token: admin, body: person('other@test.com', 'client') });
 
-	const client = (await call('POST', '/api/auth', { body: { email: 'client@test.com', password: 'pass1234' } })).data?.token;
-	check('client can log in', !!client);
+	// Residents are records, not logins: their family members sign in instead
+	const residentSignIn = await call('POST', '/api/auth', { body: { email: 'client@test.com', password: 'pass1234' } });
+	check('residents cannot sign in', residentSignIn.status === 403 && !residentSignIn.data?.token);
+	const clientId = (await call('GET', '/api/user/show_user_by_email/client@test.com', { token: admin })).data?.data?._id;
+	const noPassword = await call('POST', '/api/user/add_user', { token: admin, body: { ...person('nopass@test.com', 'client'), password: undefined } });
+	check('a resident can be added without a password', noPassword.data?.status === true);
+	await call('POST', '/api/user/add_user', { token: admin, body: { email: 'fam@test.com', role: 'family', first_name: 'Fam', last_name: 'Member', phone: '1', password: 'pass1234', resident: clientId } });
+	const client = (await call('POST', '/api/auth', { body: { email: 'fam@test.com', password: 'pass1234' } })).data?.token;
+	check('family member can log in', !!client);
 
-	// Role checks
-	check('client cannot list all users', (await call('GET', '/api/user/show_all_users', { token: client })).status === 403);
-	check('client cannot list users by role', (await call('GET', '/api/user/show_users/client', { token: client })).status === 403);
-	const clientId = (await call('GET', '/api/auth/user', { token: client })).data?._id;
-	const promote = await call('PATCH', `/api/user/update_user/${clientId}`, { token: client, body: { role: 'admin' } });
-	check('client cannot make themselves admin', promote.status === 403);
-	check('client cannot create users', (await call('POST', '/api/user/add_user', { token: client, body: person('x@test.com', 'admin') })).status === 403);
-	check('client cannot create invoices', (await call('POST', '/api/invoice/add_invoice', { token: client, body: { email: 'client@test.com', amount: 1 } })).status === 403);
-	check('client can read own profile by email', (await call('GET', '/api/user/show_user_by_email/client@test.com', { token: client })).data?.status === true);
-	check('client cannot read another user by email', (await call('GET', '/api/user/show_user_by_email/other@test.com', { token: client })).status === 403);
-	check('client cannot read another user\'s invoices', (await call('GET', '/api/invoice/show_invoice/other@test.com', { token: client })).status === 403);
-	check('client can see schedules', (await call('GET', '/api/schedule/show_all_schedules', { token: client })).data?.status === true);
+	// Role checks (as a family member)
+	check('family cannot list all users', (await call('GET', '/api/user/show_all_users', { token: client })).status === 403);
+	check('family cannot list users by role', (await call('GET', '/api/user/show_users/client', { token: client })).status === 403);
+	const familyId = (await call('GET', '/api/auth/user', { token: client })).data?._id;
+	const promote = await call('PATCH', `/api/user/update_user/${familyId}`, { token: client, body: { role: 'admin' } });
+	check('family cannot make themselves admin', promote.status === 403);
+	check('family cannot create users', (await call('POST', '/api/user/add_user', { token: client, body: person('x@test.com', 'admin') })).status === 403);
+	check('family cannot create invoices', (await call('POST', '/api/invoice/add_invoice', { token: client, body: { email: 'client@test.com', amount: 1 } })).status === 403);
+	check("family can read their resident's profile", (await call('GET', '/api/user/show_user_by_email/client@test.com', { token: client })).data?.status === true);
+	check('family cannot read another user by email', (await call('GET', '/api/user/show_user_by_email/other@test.com', { token: client })).status === 403);
+	check("family cannot read another resident's invoices", (await call('GET', '/api/invoice/show_invoice/other@test.com', { token: client })).status === 403);
+	check('family cannot see the staff rota', (await call('GET', '/api/schedule/show_all_schedules', { token: client })).status === 403);
 
 	// Admin flows
 	await call('PATCH', `/api/user/update_user/${clientId}`, { token: admin, body: { Contracts: [{ start_date: '2026-01-01', end_date: '2027-01-01' }] } });
 	const inv = await call('POST', '/api/invoice/add_invoice', { token: admin, body: { email: 'client@test.com', amount: 300, type: 'care', description: 'October' } });
 	check('admin can create an invoice', inv.data?.status === true, JSON.stringify(inv.data?.reason || ''));
 	const counts = await call('GET', '/api/user/get_counts/client@test.com', { token: client });
-	check('client dashboard counts its contract (was always 0)', counts.data?.data?.contracts === 1, JSON.stringify(counts.data));
-	check('client dashboard counts its invoice', counts.data?.data?.invoices === 1);
+	check("family dashboard counts the resident's contract", counts.data?.data?.contracts === 1, JSON.stringify(counts.data));
+	check("family dashboard counts the resident's invoice", counts.data?.data?.invoices === 1);
 	check('admin sees all invoices', (await call('GET', '/api/invoice/show_invoices', { token: admin })).data?.count === 1);
 
 	// Former crash paths
@@ -111,8 +118,8 @@ const person = (email, role) => ({
 	for (let i = 0; i < 12; i++) await call('POST', '/api/user/add_user', { token: admin, body: person(`resident${i}@test.com`, 'client') });
 	const page1 = await call('GET', '/api/user/show_users/client?current=1', { token: admin });
 	const page2 = await call('GET', '/api/user/show_users/client?current=2', { token: admin });
-	check('client list total counts every client, not just one page', page1.data?.count === 14, String(page1.data?.count));
-	check('page 1 has 10 rows, page 2 has the rest', page1.data?.data?.length === 10 && page2.data?.data?.length === 4);
+	check('resident list total counts every resident, not just one page', page1.data?.count === 15, String(page1.data?.count));
+	check('page 1 has 10 rows, page 2 has the rest', page1.data?.data?.length === 10 && page2.data?.data?.length === 5);
 	const found = await call('GET', '/api/user/show_users/client?current=1&search=RESIDENT1', { token: admin });
 	check('search matches name/email case-insensitively', found.data?.count === 3, String(found.data?.count));
 	const literal = await call('GET', '/api/user/show_users/client?search=' + encodeURIComponent('.*'), { token: admin });
@@ -215,14 +222,15 @@ const person = (email, role) => ({
 	const editedInv = (await call('PATCH', '/api/invoice/update_invoice', { token: admin, body: { _id: newInv._id, amount: 135, description: 'Physio x3', due_date: '2026-12-01', email: 'hacker@test.com' } })).data?.data;
 	check('admin can edit an invoice (but not move it to someone else)', editedInv?.amount === 135 && editedInv.description === 'Physio x3' && editedInv.due_date === '2026-12-01' && editedInv.email === 'client@test.com');
 	check('invalid invoice status is rejected', (await call('PATCH', '/api/invoice/update_invoice', { token: admin, body: { _id: newInv._id, status: 'maybe' } })).status === 400);
-	check('client cannot mark their own invoice paid', (await call('PATCH', '/api/invoice/update_invoice', { token: client, body: { _id: newInv._id, status: 'paid' } })).status === 403);
+	check('invoices are for residents, not staff', (await call('POST', '/api/invoice/add_invoice', { token: admin, body: { email: 'cg0@test.com', amount: 10 } })).status === 400);
+	check('family cannot mark an invoice paid', (await call('PATCH', '/api/invoice/update_invoice', { token: client, body: { _id: newInv._id, status: 'paid' } })).status === 403);
 
 	// Changing your own password
-	const cpClient = (await call('POST', '/api/auth', { body: { email: 'client@test.com', password: 'pass1234' } })).data.token;
+	const cpClient = (await call('POST', '/api/auth', { body: { email: 'fam@test.com', password: 'pass1234' } })).data.token;
 	check('change password needs the right current password', (await call('POST', '/api/auth/change_password', { token: cpClient, body: { current_password: 'nope', new_password: 'longenough1' } })).status === 400);
 	check('change password rejects short passwords', (await call('POST', '/api/auth/change_password', { token: cpClient, body: { current_password: 'pass1234', new_password: 'short' } })).status === 400);
 	check('change password works', (await call('POST', '/api/auth/change_password', { token: cpClient, body: { current_password: 'pass1234', new_password: 'longenough1' } })).data?.status === true);
-	check('old password stops working, new one works', (await call('POST', '/api/auth', { body: { email: 'client@test.com', password: 'pass1234' } })).status === 401 && (await call('POST', '/api/auth', { body: { email: 'client@test.com', password: 'longenough1' } })).data?.auth === true);
+	check('old password stops working, new one works', (await call('POST', '/api/auth', { body: { email: 'fam@test.com', password: 'pass1234' } })).status === 401 && (await call('POST', '/api/auth', { body: { email: 'fam@test.com', password: 'longenough1' } })).data?.auth === true);
 	check('change password requires being signed in', (await call('POST', '/api/auth/change_password', { body: { current_password: 'a', new_password: 'longenough1' } })).data?.status === false);
 
 	// Errors never leak internals

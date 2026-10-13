@@ -65,8 +65,9 @@ router.post('/add_invoice', auth, requireRole('admin'), async (req, res) => {
 	const problem = invoiceProblem(data);
 	if (problem) return res.status(400).send({ status: false, msg: problem });
 	try {
-		if (!(await Users.exists({ email: data.email }))) {
-			return res.status(400).send({ status: false, msg: 'No person with that email. Check it, or add them first.' });
+		// invoices are for residents (the care package); staff aren't billed
+		if (!(await Users.exists({ email: data.email, role: 'client' }))) {
+			return res.status(400).send({ status: false, msg: 'No resident with that email. Invoices are for residents: check the email, or add them first.' });
 		}
 		if (!data.due_date) data.due_date = inDays(14);
 		if (data.status === 'paid') data.paid_at = new Date();

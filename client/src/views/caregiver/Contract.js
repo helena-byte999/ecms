@@ -29,7 +29,7 @@ function Contracts() {
               setCurrent(response.data.data);
             } else {
               setNotificationDetails({
-                msg: "Error Loading Contracts, Please Referesh The Page",
+                msg: "Couldn't load contracts. Please refresh the page.",
                 type: "danger",
               });
               setNotificationStatus(true);

@@ -14,6 +14,7 @@ const oops = (res, err) => { console.error(err); fail(res, 500, 'Something went 
 const residentInfo = (r) => ({
 	_id: r._id, first_name: r.first_name, last_name: r.last_name, email: r.email, dob: r.dob,
 	allergy: r.Medical?.allergy || '', conditions: r.Medical?.others || '',
+	gp: r.Medical?.gp_name || '', gp_phone: r.Medical?.gp_phone || '',
 });
 
 async function signedIn(req, res) {
@@ -429,6 +430,7 @@ function periodStats(residents, meds, doses, entries, from, to) {
 	const unwell = new Set();
 	const moods = {};
 	const incidentKinds = {};
+	const byMedicine = {};
 	for (const r of residents) perResident[String(r._id)] = { ...blank(), daily: Object.fromEntries(days.map(d => [d, { expected: 0, given: 0 }])), unwell_days: 0 };
 
 	for (const r of residents) {
@@ -438,6 +440,10 @@ function periodStats(residents, meds, doses, entries, from, to) {
 			const buckets = [totals, daily[sl.date], perResident[id]];
 			if (sl.status === 'due' || sl.status === 'late') { for (const b of buckets) b.due++; continue; }
 			for (const b of buckets) { b.expected++; b[sl.status]++; }
+			const med = byMedicine[sl.medication.name] = byMedicine[sl.medication.name] || { name: sl.medication.name, expected: 0, given: 0, refused: 0, missed: 0, not_recorded: 0, residents: new Set() };
+			med.expected++;
+			med[sl.status]++;
+			med.residents.add(id);
 			perResident[id].daily[sl.date].expected++;
 			if (sl.status === 'given') perResident[id].daily[sl.date].given++;
 			if (sl.entry) {
@@ -469,6 +475,7 @@ function periodStats(residents, meds, doses, entries, from, to) {
 		perResident,
 		moods,
 		incidentKinds,
+		medicines: Object.values(byMedicine).map(m => ({ ...m, residents: m.residents.size, completion: pct(m.given, m.expected) })),
 		kept,
 	};
 }
@@ -539,6 +546,8 @@ router.get('/report', auth, staffOnly(['admin']), async (req, res) => {
 				daily: now.daily,
 				incidents_by_kind: kinds.map(k => ({ kind: k, count: now.incidentKinds[k] || 0, previous: before.incidentKinds[k] || 0 })).sort((x, y) => y.count - x.count),
 				moods: now.moods,
+				// which medicines are refused or missed most: candidates for a GP medication review
+				medicines: now.medicines.sort((x, y) => (y.refused + y.missed) - (x.refused + x.missed) || x.name.localeCompare(y.name)),
 				caregivers: Object.values(caregivers).sort((x, y) => y.entries - x.entries),
 				incidents: now.kept.filter(e => e.type === 'incident').sort((x, y) => y.at - x.at)
 					.map(e => ({ _id: e._id, at: e.at, resident: names[String(e.resident)], ...e.incident, note: e.note, author: e.author?.name })),

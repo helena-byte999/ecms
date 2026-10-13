@@ -8,6 +8,7 @@ import { PersonCell } from "components/ui/ListUI.js";
 import AccountStatusButton from "components/ui/AccountStatusButton.js";
 import { Pill } from "components/care/CareTimeline.js";
 import { fullName } from "components/care/labels.js";
+import SectionTabs, { peopleTabs } from "components/ui/SectionTabs.js";
 
 const modalStyle = {
   overlay: { zIndex: 1100, background: "rgba(15, 23, 42, 0.45)" },
@@ -184,9 +185,10 @@ export function TeamAdmins() {
 
   return (
     <div className="content">
+      <SectionTabs label="People" tabs={peopleTabs} />
       <div className="care-card">
         <div className="care-card__head">
-          <h2>Team admins</h2>
+          <h2>Admins</h2>
           <button type="button" className="care-btn care-btn--primary" onClick={() => setOpen(true)}>
             <FiPlus aria-hidden="true" /> Add admin
           </button>

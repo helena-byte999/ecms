@@ -257,8 +257,11 @@ export async function reportPdf(r) {
     [{ label: "When", width: 30 }, { label: "Resident", width: 36 }, { label: "What", width: 30 }, { label: "Details", width: 78 }],
     r.incidents.map((i) => [when(i.at), i.resident, `${INCIDENTS[i.kind] || i.kind} (${SEVERITY[i.severity] || i.severity})`, `${i.note || ""}${i.action ? ` Action: ${i.action}` : ""}`]),
   );
-  w.heading("Entries by staff");
-  w.table([{ label: "Name", width: 90 }, { label: "Entries", width: 42, align: "right" }, { label: "Doses", width: 42, align: "right" }], r.caregivers.map((c) => [c.name, c.entries, c.doses]));
+  w.heading("Refused and missed doses by medicine");
+  w.table(
+    [{ label: "Medicine", width: 70 }, { label: "Refused", width: 26, align: "right" }, { label: "Missed", width: 26, align: "right" }, { label: "Given", width: 26, align: "right" }, { label: "Residents", width: 26, align: "right" }],
+    (r.medicines || []).filter((m) => m.refused + m.missed > 0).map((m) => [m.name, m.refused, m.missed, pct(m.completion), m.residents]),
+  );
   w.doc.save(`ECMS-care-analytics-${r.from}-to-${r.to}.pdf`);
 }
 

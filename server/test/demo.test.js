@@ -51,8 +51,10 @@ async function waitFor(server, text, ms = 15000) {
 	const login = async role => (await call('POST', '/api/auth/demo', { body: { role } })).data;
 	const admin = await login('admin');
 	const caregiver = await login('caregiver');
-	const client = await login('client');
-	check('one-click demo sign-in works for all three roles', admin?.role === 'admin' && caregiver?.role === 'caregiver' && client?.role === 'client');
+	// residents don't sign in: the third demo login is Margaret's daughter
+	const client = await login('family');
+	check('one-click demo sign-in works for all three roles', admin?.role === 'admin' && caregiver?.role === 'caregiver' && client?.role === 'family');
+	check('there is no one-click resident login', (await call('POST', '/api/auth/demo', { body: { role: 'client' } })).status === 400);
 	check('unknown demo role is rejected', (await call('POST', '/api/auth/demo', { body: { role: 'superuser' } })).status === 400);
 
 	const clients = await call('GET', '/api/user/show_users/client', { token: admin.token });
@@ -62,8 +64,8 @@ async function waitFor(server, text, ms = 15000) {
 	check('sample data shows active, on-leave and deactivated staff', statuses.has('active') && statuses.has('on-leave') && statuses.has('in-active'));
 	const contracts = (await call('GET', '/api/user/show_all_contracts', { token: admin.token })).data;
 	check('sample contracts include valid, expired and none', contracts.valid.length > 0 && contracts.expired.length > 0 && contracts.noContracts.filter(u => u.role !== 'admin').length > 0);
-	const myInvoices = await call('GET', '/api/invoice/show_invoice/client@example.com', { token: client.token });
-	check('demo client has their own invoices', myInvoices.data?.count === 6);
+	const myInvoices = await call('GET', '/api/invoice/show_invoice/margaret.okafor@example.com', { token: client.token });
+	check("demo family sees Margaret's invoices", myInvoices.data?.count === 6);
 	const rotas = await call('GET', '/api/schedule/show_all_schedules', { token: caregiver.token });
 	check('this week and last week have rotas', rotas.data?.count === 2);
 	const onRota = Object.values(rotas.data.data[0].schedule).flat().map(s => s.email);
@@ -79,13 +81,13 @@ async function waitFor(server, text, ms = 15000) {
 	const thisMonth = summary?.[summary.length - 1];
 	check('chart data: 6 months, this month invoiced but unpaid', summary?.length === 6 && thisMonth.invoiced > 0 && thisMonth.paid === 0 && summary[3].paid > 0, JSON.stringify(summary));
 	check('chart data is admin-only', (await call('GET', '/api/invoice/summary', { token: client.token })).status === 403);
-	const mine = (await call('GET', '/api/user/get_counts/client@example.com', { token: client.token })).data?.data;
-	check('client dashboard: contract state and amount to pay', mine?.contract?.state === 'valid' && mine.outstanding === 2400 && mine.unpaid === 1, JSON.stringify(mine));
+	const mine = (await call('GET', '/api/user/get_counts/margaret.okafor@example.com', { token: client.token })).data?.data;
+	check("family dashboard: Margaret's contract state and amount to pay", mine?.contract?.state === 'valid' && mine.outstanding === 2400 && mine.unpaid === 1, JSON.stringify(mine));
 	// Care records and family access
 	const family = await login('family');
 	const me = (await call('GET', '/api/auth/user', { token: family.token })).data;
-	check('one-click family sign-in is linked to Margaret Okafor', family?.role === 'family' && me.resident?.email === 'client@example.com');
-	const margaretId = (await call('GET', '/api/user/show_user_by_email/client@example.com', { token: family.token })).data?.data?._id;
+	check('one-click family sign-in is linked to Margaret Okafor', family?.role === 'family' && me.resident?.email === 'margaret.okafor@example.com');
+	const margaretId = (await call('GET', '/api/user/show_user_by_email/margaret.okafor@example.com', { token: family.token })).data?.data?._id;
 	const careLog = (await call('GET', `/api/care/${margaretId}/entries`, { token: family.token })).data?.data || [];
 	const visit = careLog.find(e => e.type === 'visit');
 	check("Margaret's care log has a GP visit that started antibiotics", visit?.visit?.started?.[0]?.name === 'Amoxicillin' && careLog.length > 40, `${careLog.length} entries`);
@@ -107,12 +109,13 @@ async function waitFor(server, text, ms = 15000) {
 	check('daytime top-up refills routine care exactly once', added === removed.deletedCount && again === 0, `${removed.deletedCount} removed, ${added} added, then ${again}`);
 	await mongoose.disconnect();
 	check('family can read the care summary', (await call('GET', `/api/care/${margaretId}/summary`, { token: family.token })).data?.data?.visits.length === 1);
-	check('regular sign-in works with the demo password', (await call('POST', '/api/auth', { body: { email: 'client@example.com', password: 'demo-pass' } })).data?.auth === true);
-	const clientId = myInvoices && (await call('GET', '/api/user/show_user_by_email/client@example.com', { token: admin.token })).data.data._id;
+	check('regular sign-in works with the demo password', (await call('POST', '/api/auth', { body: { email: 'family@example.com', password: 'demo-pass' } })).data?.auth === true);
+	check('the demo resident record cannot sign in', (await call('POST', '/api/auth', { body: { email: 'margaret.okafor@example.com', password: 'demo-pass' } })).status === 403);
+	const clientId = myInvoices && (await call('GET', '/api/user/show_user_by_email/margaret.okafor@example.com', { token: admin.token })).data.data._id;
 	check('demo sign-in accounts cannot be deactivated', (await call('PATCH', `/api/user/set_status/${clientId}`, { token: admin.token, body: { status: 'in-active' } })).status === 403);
 	await call('PATCH', `/api/user/update_user/${clientId}`, { token: admin.token, body: { email: 'hijacked@example.com', role: 'admin', password: 'x', phone: '07700 999999' } });
-	const after = (await call('GET', '/api/user/show_user_by_email/client@example.com', { token: admin.token })).data?.data;
-	check('demo accounts keep their email, role and password', after?.email === 'client@example.com' && after.role === 'client' && after.phone === '07700 999999');
+	const after = (await call('GET', '/api/user/show_user_by_email/margaret.okafor@example.com', { token: admin.token })).data?.data;
+	check('demo accounts keep their email, role and password', after?.email === 'margaret.okafor@example.com' && after.role === 'client' && after.phone === '07700 999999');
 	check('other people can still be deactivated', (await call('PATCH', `/api/user/set_status/${carers.data.data.find(c => c.email === 'tomas.rivera@example.com')._id}`, { token: admin.token, body: { status: 'in-active' } })).data?.status === true);
 
 	// Nightly reset: a visitor adds someone; once the last reset is older than the boundary, a restart re-seeds

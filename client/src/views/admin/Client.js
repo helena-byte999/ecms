@@ -15,6 +15,7 @@ import ContractsCard from "components/ui/ContractsCard.js";
 import { FamilyMembers } from "components/care/people.js";
 import { Link, useHistory } from "react-router-dom";
 import Notifications from "components/Notification/Notification";
+import SectionTabs, { peopleTabs } from "components/ui/SectionTabs.js";
 import RPagination from "components/Pagination/Pagination";
 
 // reactstrap components
@@ -69,7 +70,7 @@ function Clients() {
               setPagination((p) => ({ ...p, count: response.data.count }));
             } else {
               setNotificationDetails({
-                msg: "Error Loading Clients, Please Referesh The Page",
+                msg: "Couldn't load residents. Please refresh the page.",
                 type: "danger",
               });
               setNotificationStatus(true);
@@ -90,7 +91,7 @@ function Clients() {
       .then((res) => {
         if (res.data.status) {
           setNotificationDetails({
-            msg: "Client Added Successfully.",
+            msg: "Resident added.",
             type: "success",
           });
           setClients([...clients, res.data.data]);
@@ -99,7 +100,7 @@ function Clients() {
           e.target.reset();
         } else {
           setNotificationDetails({
-            msg: "Error adding client, ensure all fields are present.",
+            msg: "Couldn't add the resident. Check every field is filled in.",
             type: "danger",
           });
         }
@@ -110,7 +111,7 @@ function Clients() {
           setNotificationDetails({
             msg:
               error.response.data.msg ||
-              "Error adding client, ensure all fields are present",
+              "Couldn't add the resident. Check every field is filled in.",
             type: "danger",
           });
           setNotificationStatus(true);
@@ -158,18 +159,19 @@ function Clients() {
         <Notifications details={notificationDetails} />
       ) : null}
       <div className="content">
+        <SectionTabs label="People" tabs={peopleTabs} />
         {mode === "all" ? (
           <>
             <Card className="ecms-list">
               <ListHeader
-                title="Clients"
+                title="Residents"
                 count={pagination.count}
                 onSearch={(value) => {
                   setSearch(value);
                   setPagination((p) => ({ ...p, current: 1 }));
                 }}
-                searchPlaceholder="Search clients"
-                actionLabel="Add client"
+                searchPlaceholder="Search residents"
+                actionLabel="Add resident"
                 onAction={() => {
                   setMode("add");
                   setCurrent({});
@@ -180,7 +182,7 @@ function Clients() {
                   <thead>
                     <tr>
                       <SortHeader field="name" sort={sort} onSort={sortBy}>
-                        Client
+                        Resident
                       </SortHeader>
                       <SortHeader field="age" sort={sort} onSort={sortBy}>
                         Age
@@ -198,7 +200,7 @@ function Clients() {
                     {clients.length === 0 && (
                       <tr>
                         <td colSpan={5} className="ecms-empty">
-                          No clients found.
+                          No residents found.
                         </td>
                       </tr>
                     )}
@@ -275,7 +277,7 @@ function Clients() {
               <CardHeader>
                 <Row style={{ marginBottom: "-20px" }}>
                   <Col>
-                    <CardTitle tag="h5">Add Client</CardTitle>
+                    <CardTitle tag="h5">Add resident</CardTitle>
                   </Col>
                   <Col md={3}>
                     <button
@@ -290,7 +292,7 @@ function Clients() {
                         marginBottom: "20px",
                       }}
                     >
-                      <BsArrowBarLeft size={20} /> Back to Clients
+                      <BsArrowBarLeft size={20} /> Back to residents
                     </button>
                   </Col>
                 </Row>
@@ -389,61 +391,40 @@ function Clients() {
                   <Row>
                     <Col className="pr-1" md="3">
                       <FormGroup>
-                        <label>Blood Group</label>
+                        <label>GP</label>
                         <Input
-                          placeholder="Relationship"
-                          type="select"
+                          placeholder="e.g. Dr Patel, Riverside Surgery"
+                          type="text"
+                          defaultValue={current?.Medical?.gp_name}
                           onChange={(e) =>
                             setCurrent({
                               ...current,
                               Medical: {
                                 ...current.Medical,
-                                blood_group: e.target.value,
+                                gp_name: e.target.value,
                               },
                             })
                           }
-                        >
-                          <option disabled selected>
-                            Select Relative...
-                          </option>
-                          {[
-                            "A+",
-                            "A-",
-                            "B+",
-                            "B-",
-                            "AB+",
-                            "AB-",
-                            "O+",
-                            "O-",
-                          ].map((stat, key) => {
-                            return <option key={key}>{stat}</option>;
-                          })}
-                        </Input>
+                        />
                       </FormGroup>
                     </Col>
                     <Col className="px-1" md="3">
                       <FormGroup>
-                        <label>Genotype</label>
+                        <label>GP phone</label>
                         <Input
-                          placeholder="Genotype"
-                          type="select"
+                          placeholder="Surgery phone number"
+                          type="tel"
+                          defaultValue={current?.Medical?.gp_phone}
                           onChange={(e) =>
                             setCurrent({
                               ...current,
                               Medical: {
                                 ...current.Medical,
-                                genotype: e.target.value,
+                                gp_phone: e.target.value,
                               },
                             })
                           }
-                        >
-                          <option disabled selected>
-                            Select Genotype...
-                          </option>
-                          {["AA", "AS", "AC", "SS", "SC"].map((stat, key) => {
-                            return <option key={key}>{stat}</option>;
-                          })}
-                        </Input>
+                        />
                       </FormGroup>
                     </Col>
 
@@ -667,21 +648,6 @@ function Clients() {
                       </FormGroup>
                     </Col>
                   </Row>
-                  <Row>
-                    <Col md="12">
-                      <FormGroup>
-                        <label>Password</label>
-                        <Input
-                          defaultValue={current.password}
-                          placeholder="*****"
-                          type="password"
-                          onChange={(e) =>
-                            setCurrent({ ...current, password: e.target.value })
-                          }
-                        />
-                      </FormGroup>
-                    </Col>
-                  </Row>
 
                   <Row>
                     <div className="update ml-auto mr-auto">
@@ -690,7 +656,7 @@ function Clients() {
                         color="primary"
                         type="submit"
                       >
-                        Add Client
+                        Add resident
                       </Button>
                     </div>
                   </Row>
@@ -710,7 +676,7 @@ function Clients() {
               className="btn"
               style={{ margin: "0px", padding: "10px", marginBottom: "15px" }}
             >
-              <BsArrowBarLeft size={20} /> Back to Clients
+              <BsArrowBarLeft size={20} /> Back to residents
             </button>
 
             <Row>
@@ -857,65 +823,40 @@ function Clients() {
                       <Row>
                         <Col className="pr-1" md="3">
                           <FormGroup>
-                            <label>Blood Group</label>
+                            <label>GP</label>
                             <Input
-                              placeholder="Relationship"
-                              type="select"
+                              placeholder="e.g. Dr Patel, Riverside Surgery"
+                              type="text"
+                              defaultValue={current?.Medical?.gp_name}
                               onChange={(e) =>
                                 setCurrent({
                                   ...current,
                                   Medical: {
                                     ...current.Medical,
-                                    blood_group: e.target.value,
+                                    gp_name: e.target.value,
                                   },
                                 })
                               }
-                            >
-                              <option disabled selected>
-                                {current?.Medical?.blood_group ||
-                                  "Select Blood Group..."}
-                              </option>
-                              {[
-                                "A+",
-                                "A-",
-                                "B+",
-                                "B-",
-                                "AB+",
-                                "AB-",
-                                "O+",
-                                "O-",
-                              ].map((stat, key) => {
-                                return <option key={key}>{stat}</option>;
-                              })}
-                            </Input>
+                            />
                           </FormGroup>
                         </Col>
                         <Col className="px-1" md="3">
                           <FormGroup>
-                            <label>Genotype</label>
+                            <label>GP phone</label>
                             <Input
-                              placeholder="Genotype"
-                              type="select"
+                              placeholder="Surgery phone number"
+                              type="tel"
+                              defaultValue={current?.Medical?.gp_phone}
                               onChange={(e) =>
                                 setCurrent({
                                   ...current,
                                   Medical: {
                                     ...current.Medical,
-                                    genotype: e.target.value,
+                                    gp_phone: e.target.value,
                                   },
                                 })
                               }
-                            >
-                              <option disabled selected>
-                                {current?.Medical?.genotype ||
-                                  "Select Genotype..."}
-                              </option>
-                              {["AA", "AS", "AC", "SS", "SC"].map(
-                                (stat, key) => {
-                                  return <option key={key}>{stat}</option>;
-                                },
-                              )}
-                            </Input>
+                            />
                           </FormGroup>
                         </Col>
 
@@ -1157,30 +1098,6 @@ function Clients() {
                         </Col>
                       </Row>
                       <Row>
-                        <Col md="12">
-                          <FormGroup>
-                            <label htmlFor="new-password">Set a new password</label>
-                            <Input
-                              id="new-password"
-                              placeholder="Leave blank to keep the current password"
-                              autoComplete="new-password"
-                              value={current.password || ""}
-                              type="password"
-                              onChange={(e) =>
-                                setCurrent({
-                                  ...current,
-                                  password: e.target.value,
-                                })
-                              }
-                            />
-                            <small className="ecms-fieldhint">
-                              At least 8 characters. Share it with them
-                              privately; they can change it from their profile.
-                            </small>
-                          </FormGroup>
-                        </Col>
-                      </Row>
-                      <Row>
                         <div className="update ml-auto mr-auto">
                           <Button
                             className="btn-round"
@@ -1203,7 +1120,7 @@ function Clients() {
                 <ContractsCard
                   contracts={current.Contracts || []}
                   onAdd={() =>
-                    history.push("/admin/contract", { addFor: current.email })
+                    history.push("/admin/contracts", { addFor: current.email })
                   }
                 />
               </Col>

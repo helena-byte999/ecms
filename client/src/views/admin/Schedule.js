@@ -73,7 +73,7 @@ function Schedules() {
               setPagination((p) => ({ ...p, count: response.data.count }));
             } else {
               setNotificationDetails({
-                msg: "Error Loading Schedules, Please Referesh The Page",
+                msg: "Couldn't load the rota. Please refresh the page.",
                 type: "danger",
               });
               setNotificationStatus(true);
@@ -140,7 +140,7 @@ function Schedules() {
             setPagination((p) => ({ ...p, count: (p.count || 0) + 1 }));
         } else {
           setNotificationDetails({
-            msg: "Error Adding Schedule.",
+            msg: "Couldn't create the rota.",
             type: "danger",
           });
         }
@@ -175,7 +175,7 @@ function Schedules() {
           <>
             <Card className="ecms-list">
               <ListHeader
-                title="Schedules"
+                title="Rotas"
                 count={pagination.count}
                 onSearch={(value) => {
                   setSearch(value);

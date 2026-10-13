@@ -122,7 +122,9 @@ router.post('/add_user', auth, requireRole('admin'), async (req, res) => {
 	if (!ROLES.includes(role)) return res.status(400).send({ status: false, msg: 'Role must be admin, caregiver, client or family.' });
 	const needed = role === 'family'
 		? ['first_name', 'last_name', 'email', 'phone', 'password']
-		: ['first_name', 'last_name', 'email', 'dob', 'address', 'phone', 'password'];
+		: role === 'client'
+			? ['first_name', 'last_name', 'email', 'dob', 'address', 'phone']
+			: ['first_name', 'last_name', 'email', 'dob', 'address', 'phone', 'password'];
 	if (needed.some(key => !String(body[key] ?? '').trim())) return res.status(400).send({ status: false, msg: 'Some fields are empty!' });
 	const email = String(body.email).trim().toLowerCase();
 	if (!EMAIL.test(email)) return res.status(400).send({ status: false, msg: 'Enter a valid email address.' });
@@ -144,7 +146,9 @@ router.post('/add_user', auth, requireRole('admin'), async (req, res) => {
 			delete data.relationship;
 			delete data._id;
 		}
-		data.password = await bcrypt.hash(String(body.password), await bcrypt.genSalt(10));
+		// residents never sign in, so they get a random password nobody knows
+		const password = role === 'client' ? require('crypto').randomBytes(24).toString('hex') : String(body.password);
+		data.password = await bcrypt.hash(password, await bcrypt.genSalt(10));
 		const newUser = await new Users(data).save();
 		const { password: _hash, ...saved } = newUser.toObject();
 		return res.status(200).send({ msg: 'Account created successfuly!', status: true, data: saved });

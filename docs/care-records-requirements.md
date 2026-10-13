@@ -34,18 +34,19 @@ Connecteam doesn't cover medicines, care notes, doctor's visits or family access
 
 ## Users and permissions
 
-| | Admin | Caregiver | Family member | Resident (client) |
-|---|---|---|---|---|
-| Read a resident's care log and medicines | All residents | All residents | Their resident only | Their own |
-| Add care entries, record doses | Yes | Yes | No | No |
-| Add or stop medicines, record a doctor's visit | Yes | Yes | No | No |
-| Care reports | All residents and the home overview | No | Their resident's summary | Their own summary |
-| Contract and invoices | All | Their own | Their resident's (read only) | Their own |
-| Create accounts | Admins, caregivers, residents, family | No | No | No |
+| | Admin | Caregiver | Family member |
+|---|---|---|---|
+| Read a resident's care log and medicines | All residents | All residents | Their resident only |
+| Add care entries, record doses | Yes | Yes | No |
+| Add or stop medicines, record a doctor's visit | Yes | Yes | No |
+| Care reports | All residents and the home overview | No | Their resident's summary |
+| Contract and invoices | All | Their own contract | Their resident's (read only) |
+| Create accounts | Admins, caregivers, residents, family | No | No |
 
 - Any caregiver can read and write for any resident. There is no assignment of caregivers to residents yet, and the next shift needs to see what happened.
 - Admins can add other admins. An admin can't deactivate themselves, and the last active admin can't be deactivated.
 - Each family member has their own read-only login, linked to one resident. A resident can have several family members.
+- Residents don't sign in. They're records, and their family members have their own logins (see "Changes after review").
 
 ## Scope of this release
 
@@ -98,6 +99,22 @@ Sample medicines for every resident, a week of care entries written by the careg
 ## Privacy
 
 Care records are health data: special category data under UK GDPR. The demo uses fictional people only. A real deployment would need a data protection impact assessment, a lawful basis and condition for processing, a retention policy, and an access log for family viewing. Making entries append-only and stamping each with its author are the first steps towards that.
+
+## Changes after review (October 2026)
+
+Once everything was built, I reviewed the product as a whole. The question was simple: what doesn't help the core message, which is that care gets recorded, families stay informed and managers see what's happening?
+
+| Change | Why |
+|---|---|
+| Removed invoices for caregivers | Caregivers aren't billed. Their dashboard showed "To pay £0.00", which looked like a bug. Invoices are now for residents only. |
+| Removed the resident login | Family accounts replaced it, and two nearly identical read-only areas muddied the roles. In care homes it's relatives who follow along. Residents are now records, not logins. |
+| Replaced genotype and blood group with GP details | UK care records don't use them; they came from the 2022 build. The GP is needed, and it now pre-fills the doctor's visit form. |
+| Replaced the "staff activity" ranking with "refusals by medicine" | Ranking caregivers by how many entries they write rewards box-ticking. Medicines that are often refused are something a manager can act on, at a GP medication review. |
+| Took contracts and the rota off the admin dashboard | Both have their own pages. The dashboard is for priorities and trends. |
+| Cut the admin menu from 10 items to 6 | Care (round, residents, analytics) and People (residents, caregivers, admins) became sections with tabs, and the profile moved to the account menu. |
+| Renamed "Clients" to "Residents", "Schedule" to "Rota" and "Care Givers" to "Caregivers" | One word for each thing, in the words a care home uses. |
+| Stopped families seeing the staff rota | It's staff information and families don't need it. |
+| Rewrote the landing page to lead with care | It still led with contracts and invoicing. The strongest features (the medicine round, family access and analytics) weren't on it. |
 
 ## How we'll know it works
 

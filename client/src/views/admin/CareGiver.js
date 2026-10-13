@@ -14,6 +14,7 @@ import AccountStatusButton from "components/ui/AccountStatusButton.js";
 import ContractsCard from "components/ui/ContractsCard.js";
 import { useHistory } from "react-router-dom";
 import Notifications from "components/Notification/Notification";
+import SectionTabs, { peopleTabs } from "components/ui/SectionTabs.js";
 import RPagination from "components/Pagination/Pagination";
 
 // reactstrap components
@@ -68,7 +69,7 @@ function CareGivers() {
               setPagination((p) => ({ ...p, count: response.data.count }));
             } else {
               setNotificationDetails({
-                msg: "Error Loading CareGivers, Please Referesh The Page",
+                msg: "Couldn't load caregivers. Please refresh the page.",
                 type: "danger",
               });
               setNotificationStatus(true);
@@ -89,7 +90,7 @@ function CareGivers() {
       .then((res) => {
         if (res.data.status) {
           setNotificationDetails({
-            msg: "Care Giver Added Successfully.",
+            msg: "Caregiver added.",
             type: "success",
           });
           setCareGivers([...caregivers, res.data.data]);
@@ -157,6 +158,7 @@ function CareGivers() {
         <Notifications details={notificationDetails} />
       ) : null}
       <div className="content">
+        <SectionTabs label="People" tabs={peopleTabs} />
         {mode === "all" ? (
           <>
             <Card className="ecms-list">
@@ -272,7 +274,7 @@ function CareGivers() {
               <CardHeader>
                 <Row style={{ marginBottom: "-20px" }}>
                   <Col>
-                    <CardTitle tag="h5">Add Care Giver</CardTitle>
+                    <CardTitle tag="h5">Add caregiver</CardTitle>
                   </Col>
                   <Col md={3}>
                     <button
@@ -287,7 +289,7 @@ function CareGivers() {
                         marginBottom: "20px",
                       }}
                     >
-                      <BsArrowBarLeft size={20} /> Back to Care Givers
+                      <BsArrowBarLeft size={20} /> Back to caregivers
                     </button>
                   </Col>
                 </Row>
@@ -606,7 +608,7 @@ function CareGivers() {
                         color="primary"
                         type="submit"
                       >
-                        Add Care Giver
+                        Add caregiver
                       </Button>
                     </div>
                   </Row>
@@ -1036,7 +1038,7 @@ function CareGivers() {
                 <ContractsCard
                   contracts={current.Contracts || []}
                   onAdd={() =>
-                    history.push("/admin/contract", { addFor: current.email })
+                    history.push("/admin/contracts", { addFor: current.email })
                   }
                 />
               </Col>

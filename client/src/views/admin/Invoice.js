@@ -64,7 +64,7 @@ function Invoices() {
           setNotificationStatus(true);
         } else {
           setNotificationDetails({
-            msg: "Error finding user, Please Referesh The Page",
+            msg: "Couldn't find that person. Please refresh the page.",
             type: "danger",
           });
           setNotificationStatus(true);
@@ -100,7 +100,7 @@ function Invoices() {
               setPagination((p) => ({ ...p, count: response.data.count }));
             } else {
               setNotificationDetails({
-                msg: "Error Loading Invoices, Please Referesh The Page",
+                msg: "Couldn't load invoices. Please refresh the page.",
                 type: "danger",
               });
               setNotificationStatus(true);
@@ -231,7 +231,7 @@ function Invoices() {
                   <thead>
                     <tr>
                       <SortHeader field="client" sort={sort} onSort={sortBy}>
-                        Client
+                        Resident
                       </SortHeader>
                       <SortHeader field="description" sort={sort} onSort={sortBy}>
                         Description

@@ -91,8 +91,9 @@ function scheduleChecks() {
 	check('family member added with contact details only (no date of birth or address)', famRes.data?.status === true && famRes.data.data.relationship === 'Son');
 	const caregiver = await signIn('carer@test.com');
 	const family = await signIn('fam@test.com');
-	const residentLogin = await signIn('res@test.com');
-	const otherLogin = await signIn('other@test.com');
+	check('residents cannot sign in (their family members do)', !(await signIn('res@test.com')));
+	await add({ email: 'otherfam@test.com', role: 'family', first_name: 'Other', last_name: 'Family', phone: '1', password: 'pass1234', resident: other._id });
+	const otherLogin = await signIn('otherfam@test.com');
 	const me = (await call('GET', '/api/auth/user', { token: family })).data;
 	check('family sign-in returns the linked resident', me?.role === 'family' && me.resident?.email === 'res@test.com');
 	check('admin can list a resident\'s family', (await call('GET', `/api/user/family/${resident._id}`, { token: admin })).data?.count === 1);
@@ -106,7 +107,7 @@ function scheduleChecks() {
 	const R = `/api/care/${resident._id}`;
 	const now = local().time;
 	const medBody = { name: 'Metformin', dose: '500 mg', times: [now], instructions: 'With food' };
-	check('residents and families cannot add medicines', (await call('POST', `${R}/medications`, { token: family, body: medBody })).status === 403 && (await call('POST', `${R}/medications`, { token: residentLogin, body: medBody })).status === 403);
+	check('families cannot add medicines', (await call('POST', `${R}/medications`, { token: family, body: medBody })).status === 403);
 	check('a medicine needs a time or "as needed"', (await call('POST', `${R}/medications`, { token: caregiver, body: { name: 'X', dose: '1' } })).status === 400);
 	const med = (await call('POST', `${R}/medications`, { token: caregiver, body: medBody })).data?.data;
 	check('a caregiver can add a medicine', med?.name === 'Metformin' && med.added_by?.name);
@@ -149,8 +150,7 @@ function scheduleChecks() {
 	const log1 = (await call('GET', `${R}/entries`, { token: family })).data;
 	check('family can read their resident\'s care log', log1?.data?.length >= 8, String(log1?.data?.length));
 	check('the corrected original stays in the log, marked as corrected', log1.data.some(e => e._id === given.data.data._id && e.corrected_by));
-	check('other residents cannot read this care log', (await call('GET', `${R}/entries`, { token: otherLogin })).status === 403);
-	check('a resident can read their own care log', (await call('GET', `${R}/entries`, { token: residentLogin })).status === 200);
+	check("another resident's family cannot read this care log", (await call('GET', `${R}/entries`, { token: otherLogin })).status === 403);
 	check('care log can be filtered by type', (await call('GET', `${R}/entries?type=incident`, { token: admin })).data.data.length === 1);
 	check('there is no way to delete an entry', (await call('DELETE', `${R}/entries/${given.data.data._id}`, { token: admin })).status === 404);
 
@@ -192,6 +192,7 @@ function scheduleChecks() {
 	check('analytics: one row per day and the previous period of the same length', an.daily.length === 7 && an.previous.daily.length === 7 && an.previous.from < an.from);
 	check('analytics: resident trend and on-time rate', row.trend.length === 7 && row.on_time_rate === 100, JSON.stringify({ trend: row.trend, on_time: row.on_time_rate }));
 	check('analytics: incidents by kind and moods', an.incidents_by_kind.some(k => k.kind === 'fall' && k.count === 1) && an.moods.content === 1);
+	check('analytics: refusals by medicine', an.medicines[0]?.name === 'Metformin' && an.medicines[0].refused === 1);
 	check('analytics: days unwell', an.totals.unwell_days === 1 && an.totals.residents_unwell === 1);
 	check('home overview is admin-only', (await call('GET', '/api/care/report', { token: caregiver })).status === 403);
 	check('a bad date range is rejected', (await call('GET', `${R}/summary?from=2026-05-01&to=2026-04-01`, { token: admin })).status === 400);
@@ -200,7 +201,7 @@ function scheduleChecks() {
 	const list = async (token) => (await call('GET', '/api/care/residents', { token })).data?.data || [];
 	check('staff see every resident', (await list(caregiver)).length === 2);
 	check('family see only their resident', (await list(family)).map(r => r.email).join() === 'res@test.com');
-	check('a resident sees only themselves', (await list(otherLogin)).map(r => r.email).join() === 'other@test.com');
+	check("another family sees only their own resident", (await list(otherLogin)).map(r => r.email).join() === 'other@test.com');
 
 	server.kill();
 	await mongo.stop();

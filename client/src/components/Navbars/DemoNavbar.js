@@ -45,15 +45,16 @@ function Header({ props, routes }) {
     setIsOpen(!isOpen);
   };
 
+  // Page title: the most specific route that matches the address
   const getBrand = () => {
-    let brandName = "Default";
-    routes.map((prop, key) => {
-      if (window.location.href.indexOf(prop.layout + prop.path) !== -1) {
-        brandName = prop.name;
-      }
-      return null;
-    });
-    return brandName;
+    const here = location.pathname;
+    let best = null;
+    for (const prop of routes) {
+      const base = prop.layout + prop.path;
+      if (base.includes(":")) continue;
+      if ((here === base || here.startsWith(base + "/")) && (!best || base.length > best.base.length)) best = { base, name: prop.name };
+    }
+    return best ? best.name : "ECMS";
   };
   const openSidebar = () => {
     document.documentElement.classList.toggle("nav-open");

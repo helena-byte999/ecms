@@ -48,7 +48,8 @@ router.post('/add_schedule', auth, requireRole('admin'), async (req, res) => {
 	}
 });
 
-router.get('/show_all_schedules', auth, async (req, res) => {
+// The staff rota is for staff; families don't need to see who works when
+router.get('/show_all_schedules', auth, requireRole('admin', 'caregiver'), async (req, res) => {
 	try {
 		const { skip, take } = pageOf(req.query);
 		const filter = searchFilter(req.query.search, ['week', 'start_date', 'end_date']);

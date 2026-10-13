@@ -440,7 +440,8 @@ export function VisitDialog({ open, onClose, resident, medicines = [], onSaved }
   const { busy, error, setError, save } = useSave(onSaved, onClose);
   useEffect(() => {
     if (!open) return;
-    setForm({ at: localNow(), allergy: resident?.allergy || "", conditions: resident?.conditions || "" });
+    // usually the resident's own GP
+    setForm({ at: localNow(), professional: resident?.gp || "", allergy: resident?.allergy || "", conditions: resident?.conditions || "" });
     setStarts([]);
     setStops({});
     setError("");

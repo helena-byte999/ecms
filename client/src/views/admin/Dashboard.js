@@ -10,9 +10,7 @@ import { useAuth } from "contexts/AuthContext";
 import { ChartCard, Delta, KpiStrip, Note, SeriesTotals, StackedBars, TrendChart, fmtPct } from "components/care/charts.js";
 import { OUTCOME_SERIES, PALETTE } from "components/care/palette.js";
 import { daysAgo, ymd } from "components/care/labels.js";
-import Schedules from "../caregiver/Schedule";
-import Contracts from "./Contract";
-import { Card, CardBody, Row, Col } from "reactstrap";
+import { Card, CardBody } from "reactstrap";
 
 const plural = (n, word) => (n ? `${n} ${word}${n === 1 ? "" : "s"}` : `no ${word}s`);
 const dayLabel = (d) => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric" });
@@ -66,7 +64,7 @@ function Dashboard() {
           </div>
           <div className="care-actions">
             <Link to="/admin/care" className="care-btn">Medicine round</Link>
-            <Link to="/admin/analytics" className="care-btn care-btn--primary">Care analytics</Link>
+            <Link to="/admin/care/analytics" className="care-btn care-btn--primary">Care analytics</Link>
           </div>
         </div>
 
@@ -133,14 +131,6 @@ function Dashboard() {
           </CardBody>
         </Card>
 
-        <Row>
-          <Col lg={6}>
-            <Contracts isDashboard={true} />
-          </Col>
-          <Col lg={6}>
-            <Schedules />
-          </Col>
-        </Row>
       </div>
     </>
   );

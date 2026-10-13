@@ -8,13 +8,11 @@ import Loader from "components/Loader.js";
 
 // Each role's area loads only after sign-in, so the landing page stays small
 const AdminLayout = lazy(() => import("layouts/Admin.js"));
-const ClientLayout = lazy(() => import("layouts/Client"));
 const CaregiverLayout = lazy(() => import("layouts/Caregiver"));
 const FamilyLayout = lazy(() => import("layouts/Family"));
 
 const roleLayouts = {
   admin: AdminLayout,
-  client: ClientLayout,
   caregiver: CaregiverLayout,
   family: FamilyLayout,
 };
