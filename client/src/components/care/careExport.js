@@ -229,20 +229,28 @@ export function summaryCsv(s) {
 // ---- Home overview (admin)
 export async function reportPdf(r) {
   const { jsPDF } = await import("jspdf");
-  const w = writer(jsPDF, "Care overview", `${formatDate(r.from)} to ${formatDate(r.to)} · ${r.residents.length} residents`);
+  const prev = r.previous?.totals || {};
+  const w = writer(jsPDF, "Care analytics", `${formatDate(r.from)} to ${formatDate(r.to)} · ${r.residents.length} residents · compared with ${formatDate(r.previous?.from)} to ${formatDate(r.previous?.to)}`);
+  const vs = (now, before, unit = "") => (before === null || before === undefined ? "" : ` (was ${before}${unit})`);
   w.figures([
-    ["Doses given", `${r.totals.given} of ${r.totals.scheduled - r.totals.due}`],
-    ["Completion", pct(r.totals.completion)],
+    ["Doses given", `${pct(r.totals.completion_exact ?? r.totals.completion)}`],
+    ["Recorded on time", pct(r.totals.on_time_rate)],
     ["Refused / missed", `${r.totals.refused} / ${r.totals.missed}`],
     ["Not recorded", String(r.totals.not_recorded)],
     ["Incidents", String(r.totals.incidents)],
+    ["Days unwell", String(r.totals.unwell_days ?? "-")],
     ["Doctor's visits", String(r.totals.visits)],
     ["Care entries", String(r.totals.entries)],
   ]);
-  w.heading("By resident");
+  w.para(
+    `Previous period: ${pct(prev.completion)} of doses given${vs(0, prev.on_time_rate, "%").replace("was", "on time")}, ` +
+      `${prev.refused ?? "-"} refused, ${prev.missed ?? "-"} missed, ${prev.incidents ?? "-"} incidents, ${prev.unwell_days ?? "-"} days unwell.`,
+    MUTED,
+  );
+  w.heading("By resident (lowest completion first)");
   w.table(
-    [{ label: "Resident", width: 46 }, { label: "Given", width: 22, align: "right" }, { label: "Done", width: 16, align: "right" }, { label: "Refused", width: 18, align: "right" }, { label: "Missed", width: 17, align: "right" }, { label: "Not rec.", width: 18, align: "right" }, { label: "Incid.", width: 16, align: "right" }, { label: "Visits", width: 21, align: "right" }],
-    r.residents.map((x) => [x.name, `${x.given}/${x.scheduled - x.due}`, pct(x.completion), x.refused, x.missed, x.not_recorded, x.incidents, x.visits]),
+    [{ label: "Resident", width: 44 }, { label: "Given", width: 20, align: "right" }, { label: "Done", width: 16, align: "right" }, { label: "On time", width: 18, align: "right" }, { label: "Refused", width: 18, align: "right" }, { label: "Missed", width: 16, align: "right" }, { label: "Not rec.", width: 16, align: "right" }, { label: "Incid.", width: 13, align: "right" }, { label: "Unwell", width: 13, align: "right" }],
+    [...r.residents].sort((a, b) => (a.completion ?? 101) - (b.completion ?? 101)).map((x) => [x.name, `${x.given}/${x.scheduled - x.due}`, pct(x.completion), pct(x.on_time_rate), x.refused, x.missed, x.not_recorded, x.incidents, x.unwell_days ?? "-"]),
   );
   w.heading("Incidents");
   w.table(
@@ -251,14 +259,17 @@ export async function reportPdf(r) {
   );
   w.heading("Entries by staff");
   w.table([{ label: "Name", width: 90 }, { label: "Entries", width: 42, align: "right" }, { label: "Doses", width: 42, align: "right" }], r.caregivers.map((c) => [c.name, c.entries, c.doses]));
-  w.doc.save(`ECMS-care-overview-${r.from}-to-${r.to}.pdf`);
+  w.doc.save(`ECMS-care-analytics-${r.from}-to-${r.to}.pdf`);
 }
 
 export function reportCsv(r) {
   const rows = [
-    ["Resident", "Scheduled", "Given", "Refused", "Missed", "Not recorded", "Due now", "Completion %", "Incidents", "Doctor's visits", "Entries"],
-    ...r.residents.map((x) => [x.name, x.scheduled, x.given, x.refused, x.missed, x.not_recorded, x.due, x.completion ?? "", x.incidents, x.visits, x.entries]),
-    ["Total", r.totals.scheduled, r.totals.given, r.totals.refused, r.totals.missed, r.totals.not_recorded, r.totals.due, r.totals.completion ?? "", r.totals.incidents, r.totals.visits, r.totals.entries],
+    ["Resident", "Scheduled", "Given", "Refused", "Missed", "Not recorded", "Due now", "Completion %", "On time %", "Incidents", "Doctor's visits", "Days unwell", "Entries"],
+    ...r.residents.map((x) => [x.name, x.scheduled, x.given, x.refused, x.missed, x.not_recorded, x.due, x.completion ?? "", x.on_time_rate ?? "", x.incidents, x.visits, x.unwell_days ?? "", x.entries]),
+    ["Total", r.totals.scheduled, r.totals.given, r.totals.refused, r.totals.missed, r.totals.not_recorded, r.totals.due, r.totals.completion_exact ?? r.totals.completion ?? "", r.totals.on_time_rate ?? "", r.totals.incidents, r.totals.visits, r.totals.unwell_days ?? "", r.totals.entries],
+    [],
+    ["Date", "Completion %", "Given", "Refused", "Missed", "Not recorded", "On time", "Incidents", "Entries"],
+    ...(r.daily || []).map((d) => [d.date, d.completion ?? "", d.given, d.refused, d.missed, d.not_recorded, d.on_time, d.incidents, d.entries]),
   ];
-  download(toCsv(rows), `ECMS-care-overview-${r.from}-to-${r.to}.csv`, "text/csv;charset=utf-8");
+  download(toCsv(rows), `ECMS-care-analytics-${r.from}-to-${r.to}.csv`, "text/csv;charset=utf-8");
 }

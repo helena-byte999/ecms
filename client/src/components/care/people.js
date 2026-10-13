@@ -8,7 +8,6 @@ import { PersonCell } from "components/ui/ListUI.js";
 import AccountStatusButton from "components/ui/AccountStatusButton.js";
 import { Pill } from "components/care/CareTimeline.js";
 import { fullName } from "components/care/labels.js";
-import "components/care/care.css";
 
 const modalStyle = {
   overlay: { zIndex: 1100, background: "rgba(15, 23, 42, 0.45)" },

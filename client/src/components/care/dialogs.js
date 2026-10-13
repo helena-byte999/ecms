@@ -4,7 +4,6 @@ import Modal from "react-modal";
 import { FiPlus, FiX } from "react-icons/fi";
 import { care } from "data/api";
 import { MEALS, EATEN, TASKS, MOODS, INCIDENTS, SEVERITY, ymd } from "components/care/labels.js";
-import "components/care/care.css";
 
 const modalStyle = {
   overlay: { zIndex: 1100, background: "rgba(15, 23, 42, 0.45)" },

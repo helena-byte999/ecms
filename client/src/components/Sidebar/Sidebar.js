@@ -30,8 +30,12 @@ function Sidebar(props) {
     return () => document.body.classList.remove("ecms-sidebar-mini");
   }, [collapsed]);
   // verifies if routeName is the one active (in browser input)
-  const activeRoute = (routeName) => {
-    return props.location.pathname.indexOf(routeName) > -1 ? "active" : "";
+  // Active when the address is this page or below it ("/caregiver/care" must not
+  // light up "/care" on "/caregiver/dashboard")
+  const activeRoute = (route) => {
+    const base = route.layout + route.path;
+    const here = props.location.pathname;
+    return here === base || here.startsWith(base + "/") ? "active" : "";
   };
   React.useEffect(() => {
     if (navigator.platform.indexOf("Win") > -1) {
@@ -64,7 +68,7 @@ function Sidebar(props) {
             return (
               <li
                 className={
-                  activeRoute(prop.path) + (prop.pro ? " active-pro" : "")
+                  activeRoute(prop) + (prop.pro ? " active-pro" : "")
                 }
                 key={key}
               >

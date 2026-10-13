@@ -1,12 +1,12 @@
 import React from "react";
-import { FaExclamationTriangle, FaHandsWash, FaHeartbeat, FaPalette, FaPills, FaStethoscope, FaStickyNote, FaUtensils } from "react-icons/fa";
+import HealthIcon from "components/HealthIcon.js";
 import { CHANGE_FIELDS, DOSE, EATEN, INCIDENTS, MEALS, MOODS, SEVERITY, TASKS, dayLabel, timeOf } from "components/care/labels.js";
-import "components/care/care.css";
 
 const ICONS = {
-  dose: FaPills, meal: FaUtensils, care: FaHandsWash, wellbeing: FaHeartbeat,
-  activity: FaPalette, incident: FaExclamationTriangle, note: FaStickyNote, visit: FaStethoscope,
+  dose: "medicines", meal: "meal", care: "washHands", wellbeing: "heartbeat",
+  activity: "walking", incident: "alert", note: "note", visit: "stethoscope",
 };
+export const MOOD_ICONS = { content: "happy", settled: "calm", low: "sad", anxious: "nervous", agitated: "angry", drowsy: "sleepy" };
 
 export const Pill = ({ tone = "muted", children, plain }) => (
   <span className={`care-pill care-pill--${tone}${plain ? " care-pill--plain" : ""}`}>{children}</span>
@@ -34,7 +34,11 @@ function describe(e) {
       const w = e.wellbeing || {};
       const bits = [w.mood && MOODS[w.mood], typeof w.temperature === "number" && `${w.temperature.toFixed(1)} °C`].filter(Boolean);
       return {
-        title: "Wellbeing",
+        title: w.mood ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            Wellbeing <HealthIcon name={MOOD_ICONS[w.mood]} size={18} title={MOODS[w.mood]} />
+          </span>
+        ) : "Wellbeing",
         badge: w.unwell ? <Pill tone="bad">Unwell</Pill> : typeof w.temperature === "number" && w.temperature >= 37.8 ? <Pill tone="warn">High temperature</Pill> : null,
         detail: bits.join(" · "),
       };
@@ -97,12 +101,12 @@ function CareTimeline({ entries, onCorrect }) {
     <section className="care-day" key={day.label}>
       <h4>{day.label}</h4>
       {day.items.map((e) => {
-        const Icon = ICONS[e.type] || FaStickyNote;
+        const icon = ICONS[e.type] || "note";
         const d = describe(e);
         return (
           <article className={"care-entry" + (e.corrected_by ? " care-entry--old" : "")} key={e._id}>
             <span className="care-entry__time">{timeOf(e.at)}</span>
-            <span className={`care-entry__icon care-entry__icon--${e.type}`} aria-hidden="true"><Icon /></span>
+            <span className={`care-entry__icon care-entry__icon--${e.type}`} aria-hidden="true"><HealthIcon name={icon} size={20} /></span>
             <div className="care-entry__main">
               <div className="care-entry__title">
                 <span>{d.title}</span>

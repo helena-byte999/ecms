@@ -3,43 +3,43 @@ import Dashboard from "views/client/Dashboard.js";
 import Invoice from "views/client/Invoice.js";
 import UserPage from "views/client/User.js";
 import ResidentCare from "views/care/ResidentCare.js";
-import { FaHeartbeat } from "react-icons/fa";
+import HealthIcon from "components/HealthIcon.js";
 
 // Family members see their resident's records, read only (the views show the
 // linked resident; see components/care/useSubject.js)
 var routes = [
   {
     path: "/dashboard",
+    icon_comp: <HealthIcon name="home" size={22} />,
     name: "Dashboard",
-    icon: "nc-icon nc-bank",
     component: Dashboard,
     layout: "/family",
   },
   {
     path: "/care",
+    icon_comp: <HealthIcon name="heartbeat" size={22} />,
     name: "Care",
-    icon_comp: <FaHeartbeat size={24} />,
     component: ResidentCare,
     layout: "/family",
   },
   {
     path: "/invoices",
+    icon_comp: <HealthIcon name="bills" size={22} />,
     name: "Invoices",
-    icon: "nc-icon nc-tile-56",
     component: Invoice,
     layout: "/family",
   },
   {
     path: "/contracts",
+    icon_comp: <HealthIcon name="contract" size={22} />,
     name: "Contract",
-    icon: "nc-icon nc-tile-56",
     component: Contracts,
     layout: "/family",
   },
   {
     path: "/user-page",
+    icon_comp: <HealthIcon name="profile" size={22} />,
     name: "User Profile",
-    icon: "nc-icon nc-single-02",
     component: UserPage,
     layout: "/family",
   },

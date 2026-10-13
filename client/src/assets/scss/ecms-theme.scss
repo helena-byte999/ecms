@@ -25,6 +25,19 @@
   --shadow: 0 14px 36px rgba(29, 43, 63, 0.09);
   --shadow-lg: 0 24px 60px rgba(29, 43, 63, 0.14);
   --focus: 0 0 0 3px rgba(15, 143, 138, 0.22);
+  // Extra tones and the chart palette. The same values live in
+  // components/care/palette.js for SVG charts; change both together.
+  --info: #2a78d6;
+  --info-soft: #e8f0fb;
+  --violet: #6a4fc0;
+  --violet-soft: #f1ecfb;
+  --chart-1: #0a9e94; // this period, given
+  --chart-2: #2a78d6; // second series
+  --chart-prev: #b9c3cd; // previous period
+  --chart-refused: #e3a23b;
+  --chart-missed: #d1495b;
+  --chart-gap: #6b7a8c; // not recorded
+  --chart-grid: #eef1f4;
   --font: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 

@@ -93,6 +93,8 @@ async function waitFor(server, text, ms = 15000) {
 	check('...and the antibiotics are on her medicine list', margaretMeds.active.some(m => m.name === 'Amoxicillin' && m.end_date));
 	const careReport = (await call('GET', '/api/care/report', { token: admin.token })).data?.data;
 	check('care report: every resident, mostly given, a few refused, an incident or two', careReport?.residents.length === 12 && careReport.totals.completion >= 85 && careReport.totals.refused > 0 && careReport.incidents.length >= 2, JSON.stringify(careReport?.totals));
+	const r30 = (await call('GET', `/api/care/report?from=${new Date(Date.now() - 29 * 864e5).toISOString().slice(0, 10)}`, { token: admin.token })).data?.data;
+	check('60 days of history: a 30-day period has a previous period to compare with', r30?.daily.length === 30 && r30.previous.totals.completion > 50 && r30.previous.totals.entries > 1000, JSON.stringify(r30?.previous.totals));
 	check('care report: entries come from caregivers on the rota', careReport.caregivers.length >= 3 && careReport.caregivers.every(c => c.role === 'caregiver'));
 	check('a corrected entry is in the sample data', (await call('GET', `/api/care/${careReport.residents.find(r => r.name === 'Edward Lindqvist')._id}/entries?type=meal`, { token: admin.token })).data.data.some(e => e.corrected_by));
 	// The daytime top-up refills routine care that has happened, exactly once

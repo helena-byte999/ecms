@@ -24,8 +24,10 @@ const ACCOUNTS = {
 const isDemoAccount = (user) => !!user && Object.values(ACCOUNTS).includes(user.email);
 
 const RESET_HOUR_UTC = 3;
+// Days of sample care history, enough to compare a 30-day period with the one before
+const HISTORY_DAYS = 60;
 // Bump when the sample data changes, so the next deploy re-seeds straight away
-const SEED_VERSION = 4;
+const SEED_VERSION = 5;
 const DAY = 86400000;
 
 const caregivers = [
@@ -185,8 +187,17 @@ const stamp = (d) => { const l = local(d); return `${l.date} ${l.time}`; };
 // wellbeing, and their doses (nearly all given; the odd refusal, missed dose or gap).
 // Times and outcomes are repeatable for a given resident and date, so the nightly
 // reset and the daytime top-up produce the same entries.
+// `back` is how many days ago it was: older weeks were a little less tidy (more gaps
+// and late recording, the odd minor incident), so the analytics show an improvement.
 // Returns [{ time, slot (dose time, for doses), by, fields }]
-function routineDay(i, date, meds, staff, ill) {
+const OLD_INCIDENTS = [
+	['fall', 'Found sitting on the floor in the lounge; said they lost their balance.', 'Checked for injuries: none. Physio referral made.'],
+	['skin', 'Small bruise on the shin noticed during personal care.', 'Recorded on the body map. Checked daily.'],
+	['behaviour', 'Became distressed in the evening and wanted to go home.', 'Reassured with a drink and music. Settled after 20 minutes.'],
+	['injury', 'Knocked a hand on the door frame.', 'Cold compress applied. No swelling the next day.'],
+];
+function routineDay(i, date, meds, staff, ill, back = 0) {
+	const older = Math.min(back, 56) / 56;
 	const rand = seeded(dayNumber(date) * 131 + i * 97 + 7);
 	const n = dayNumber(date);
 	const pick = () => staff[Math.floor(rand() * staff.length)];
@@ -198,7 +209,12 @@ function routineDay(i, date, meds, staff, ill) {
 	}
 	out.push({ time: '15:30', by: pick(), fields: { type: 'meal', meal: { meal: 'drink', drink_ml: ill ? 300 : 200 }, note: ill ? 'Encouraged extra fluids.' : '' } });
 	if (rand() < 0.5) out.push({ time: '14:30', by: pick(), fields: { type: 'activity', activity: { name: ACTIVITIES[(i + n) % ACTIVITIES.length] } } });
-	out.push({ time: '19:30', by: pick(), fields: { type: 'wellbeing', wellbeing: { mood: ill ? 'low' : MOODS[(i * 3 + n) % MOODS.length], unwell: ill } } });
+	const offDay = back >= 7 && rand() < 0.012;
+	out.push({ time: '19:30', by: pick(), fields: { type: 'wellbeing', wellbeing: { mood: ill || offDay ? 'low' : MOODS[(i * 3 + n) % MOODS.length], unwell: ill || offDay, ...(offDay ? { temperature: 38 + Math.round(rand() * 4) / 10 } : {}) }, ...(offDay ? { note: 'A bit under the weather; plenty of fluids and an early night.' } : {}) } });
+	if (back >= 7 && rand() < 0.007) {
+		const [kind, note, action] = OLD_INCIDENTS[Math.floor(rand() * OLD_INCIDENTS.length)];
+		out.push({ time: '16:20', by: pick(), fields: { type: 'incident', note, incident: { kind, severity: 'minor', action, family_informed: true } } });
+	}
 
 	for (const m of meds) {
 		if (m.as_needed || date < m.start_date || (m.end_date && date > m.end_date)) continue;
@@ -206,8 +222,9 @@ function routineDay(i, date, meds, staff, ill) {
 			const key = `${date} ${t}`;
 			if (key < stamp(m.added_at) || (m.status === 'stopped' && m.stopped_at && key >= stamp(m.stopped_at))) continue;
 			const by = pick();
-			const offset = 5 + Math.floor(rand() * 20);
-			if (rand() < 0.015) continue; // left unrecorded
+			// usually recorded within half an hour; sometimes much later (more often in older weeks)
+			const offset = rand() < 0.03 + 0.08 * older ? 65 + Math.floor(rand() * 60) : 5 + Math.floor(rand() * 20);
+			if (rand() < 0.012 + 0.035 * older) continue; // left unrecorded
 			const roll = rand();
 			const outcome = roll < 0.04 ? 'refused' : roll < 0.05 ? 'missed' : 'given';
 			const note = outcome === 'refused' ? 'Refused. Offered again 30 minutes later, still refused.' : outcome === 'missed' ? 'Out at a hospital appointment.' : '';
@@ -282,9 +299,9 @@ async function seedCare(residents, caregivers, rotas, now) {
 
 	residents.forEach((r, i) => {
 		const mine = meds.filter(m => String(m.resident) === String(r._id));
-		for (let back = 6; back >= 0; back--) {
+		for (let back = HISTORY_DAYS - 1; back >= 0; back--) {
 			const date = addDays(today.date, -back);
-			for (const x of routineDay(i, date, mine, onShift(date), isIll(i, date, today.date))) {
+			for (const x of routineDay(i, date, mine, onShift(date), isIll(i, date, today.date), back)) {
 				if (happened(x, date, today)) entries.push(careEntry(r, date, x));
 			}
 		}

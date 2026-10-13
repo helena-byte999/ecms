@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { FiArrowLeft, FiDownload, FiPlus } from "react-icons/fi";
-import { FaStethoscope } from "react-icons/fa";
+import HealthIcon from "components/HealthIcon.js";
 import { care } from "data/api";
 import { useAuth } from "contexts/AuthContext";
 import { Avatar, formatDate } from "components/ui/ListUI.js";
@@ -11,7 +11,6 @@ import { DoseDialog, EntryDialog, MedicineDialog, StopMedicineDialog, VisitDialo
 import { ENTRY_TYPES, EATEN, MOODS, INCIDENTS, SEVERITY, age, daysAgo, fullName, timeOf, ymd } from "components/care/labels.js";
 import { summaryCsv, summaryPdf } from "components/care/careExport.js";
 import { useSubject } from "components/care/useSubject.js";
-import "components/care/care.css";
 
 const RANGES = { 7: "Last 7 days", 30: "Last 30 days", 90: "Last 90 days" };
 
@@ -352,10 +351,10 @@ function ResidentCare() {
                 <FiPlus aria-hidden="true" /> Add entry
               </button>
               <button type="button" className="care-btn" onClick={() => setDialog({ kind: "visit" })}>
-                <FaStethoscope aria-hidden="true" /> Doctor's visit
+                <HealthIcon name="stethoscope" size={18} /> Doctor's visit
               </button>
               <button type="button" className="care-btn" onClick={() => setDialog({ kind: "medicine" })}>
-                <FiPlus aria-hidden="true" /> Medicine
+                <HealthIcon name="medicines" size={18} /> Medicine
               </button>
             </div>
           )}

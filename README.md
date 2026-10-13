@@ -28,7 +28,8 @@ ECMS is role-based. Everyone signs in to the same system and sees only what they
 - **Care log**: meals and drinks, personal care, wellbeing (mood, temperature, unwell), activities, incidents and notes, each stamped with who and when. Entries can't be edited or deleted; mistakes are fixed with a visible correction
 - **Medicines**: each resident's list with times or "as needed", courses with an end date; stopping one keeps the history
 - **Doctor's visits** update the resident's records automatically: medicines started or stopped and changes to allergies and conditions, with a before / after record in the log
-- **Reports**: a care summary per resident (doses given, refused, missed and not recorded; incidents; visits; wellbeing; meals) and a home overview for admins, as **PDF and CSV**
+- **Care analytics** for admins: doses given and recorded on time, refused and missed doses, incidents and days unwell, each against the previous period; daily trend, outcomes by day or week, incidents by type, mood, staff activity, and a residents table with trend lines, lowest completion first
+- **Reports**: a care summary per resident (doses given, refused, missed and not recorded; incidents; visits; wellbeing; meals) and the analytics, as **PDF and CSV**
 - **Family access**: each relative gets their own read-only login, linked to one resident
 - **Team admins**: admins can add other admins; you can't deactivate yourself or the last admin
 
@@ -51,15 +52,17 @@ ECMS is role-based. Everyone signs in to the same system and sees only what they
 |----------|---------|
 | ![ECMS homepage](docs/screenshots/home.png) | ![Sign-in page with one-click demo roles](docs/screenshots/login.png) |
 
+| Admin dashboard | Care analytics |
+|-----------------|----------------|
+| ![Admin dashboard: today's priorities, key figures against last week, dose trend and outcomes](docs/screenshots/admin-dashboard.png) | ![Care analytics: dose completion against the previous period, outcomes by week, incidents, mood and staff activity](docs/screenshots/care-analytics.png) |
+
 | Medicine round (caregiver) | Care log (family member's view) |
 |----------------------------|---------------------------------|
 | ![Today's medicine round with doses given, due and refused](docs/screenshots/care-round.png) | ![A resident's care log seen by her family: allergy, conditions, doses and meals](docs/screenshots/care-family.png) |
 
-| Admin dashboard | Caregiver dashboard (own shifts highlighted) |
-|-----------------|----------------------------------------------|
-| ![Admin dashboard with contracts and weekly rota](docs/screenshots/admin-dashboard.png) | ![Caregiver dashboard with weekly rota](docs/screenshots/caregiver-dashboard.png) |
-
-<img src="docs/screenshots/mobile-home.png" alt="ECMS homepage on a phone" width="260">
+| Caregiver dashboard (medicine round, own shifts highlighted) | On a phone |
+|--------------------------------------------------------------|------------|
+| ![Caregiver dashboard with the medicine round and weekly rota](docs/screenshots/caregiver-dashboard.png) | <img src="docs/screenshots/mobile-home.png" alt="ECMS homepage on a phone" width="260"> |
 
 _Screenshots use made-up demo data._
 
@@ -172,6 +175,8 @@ npm test    # API, care records and demo suites against a throwaway MongoDB; no 
 > Real secrets are never committed. Only `.env.example` templates are tracked, and `.env` is gitignored.
 
 ## Credits
+
+Icons for care, medicines and people: [Health Icons](https://healthicons.org), public domain (CC0).
 
 Care-home footage on the landing page: [Pexels video 7522210](https://www.pexels.com/video/7522210/), used under the [Pexels licence](https://www.pexels.com/license/).
 

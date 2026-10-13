@@ -188,6 +188,11 @@ function scheduleChecks() {
 	check('admin home overview has a row per resident', report.status === 200 && report.data.data.residents.length === 2 && row.refused === 1 && row.incidents === 1 && row.visits === 1);
 	// the caregiver's dose was replaced by the admin's correction, so 7 of their entries count
 	check('home overview counts entries per caregiver', report.data.data.caregivers.some(c => c.role === 'caregiver' && c.entries === 7));
+	const an = report.data.data;
+	check('analytics: one row per day and the previous period of the same length', an.daily.length === 7 && an.previous.daily.length === 7 && an.previous.from < an.from);
+	check('analytics: resident trend and on-time rate', row.trend.length === 7 && row.on_time_rate === 100, JSON.stringify({ trend: row.trend, on_time: row.on_time_rate }));
+	check('analytics: incidents by kind and moods', an.incidents_by_kind.some(k => k.kind === 'fall' && k.count === 1) && an.moods.content === 1);
+	check('analytics: days unwell', an.totals.unwell_days === 1 && an.totals.residents_unwell === 1);
 	check('home overview is admin-only', (await call('GET', '/api/care/report', { token: caregiver })).status === 403);
 	check('a bad date range is rejected', (await call('GET', `${R}/summary?from=2026-05-01&to=2026-04-01`, { token: admin })).status === 400);
 

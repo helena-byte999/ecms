@@ -398,54 +398,149 @@ router.get('/:id/summary', auth, careAccess('report'), async (req, res) => {
 	} catch (err) { oops(res, err); }
 });
 
+// A dose counts as "on time" if it was recorded within an hour of its time
+const ON_TIME_MIN = 60;
+const pct = (n, d) => (d ? Math.round((n / d) * 1000) / 10 : null);
+const daysBetween = (from, to) => { const out = []; for (let d = from; d <= to; d = addDays(d, 1)) out.push(d); return out; };
+
+// A resident's completion over the period: one point a day for short periods, one a
+// week (counted back from the last day) for longer ones, so a single refused dose
+// doesn't make the line jump from 100% to 50%
+function trendPoints(days) {
+	const size = days.length > 14 ? 7 : 1;
+	const points = [];
+	for (let end = days.length; end > 0; end -= size) {
+		const chunk = days.slice(Math.max(0, end - size), end);
+		const expected = chunk.reduce((n, d) => n + d.expected, 0);
+		const given = chunk.reduce((n, d) => n + d.given, 0);
+		points.unshift(expected ? Math.round((given / expected) * 100) : null);
+	}
+	return points;
+}
+
+// Figures for a period across the given residents: totals, one row per day, and per resident
+function periodStats(residents, meds, doses, entries, from, to) {
+	const days = daysBetween(from, to);
+	const blank = () => ({ expected: 0, given: 0, refused: 0, missed: 0, not_recorded: 0, due: 0, recorded: 0, on_time: 0, incidents: 0, visits: 0, entries: 0 });
+	const daily = Object.fromEntries(days.map(d => [d, { date: d, ...blank() }]));
+	const totals = blank();
+	const kept = care.current(entries).filter(e => { const d = local(e.at).date; return d >= from && d <= to; });
+	const perResident = {};
+	const unwell = new Set();
+	const moods = {};
+	const incidentKinds = {};
+	for (const r of residents) perResident[String(r._id)] = { ...blank(), daily: Object.fromEntries(days.map(d => [d, { expected: 0, given: 0 }])), unwell_days: 0 };
+
+	for (const r of residents) {
+		const id = String(r._id);
+		const slots = care.doseSlots(meds.filter(m => String(m.resident) === id), doses.filter(d => String(d.resident) === id), from, to);
+		for (const sl of slots) {
+			const buckets = [totals, daily[sl.date], perResident[id]];
+			if (sl.status === 'due' || sl.status === 'late') { for (const b of buckets) b.due++; continue; }
+			for (const b of buckets) { b.expected++; b[sl.status]++; }
+			perResident[id].daily[sl.date].expected++;
+			if (sl.status === 'given') perResident[id].daily[sl.date].given++;
+			if (sl.entry) {
+				const late = Math.abs(new Date(sl.entry.at) - instant(sl.date, sl.time)) / 60000;
+				for (const b of buckets) { b.recorded++; if (late <= ON_TIME_MIN) b.on_time++; }
+			}
+		}
+	}
+	for (const e of kept) {
+		const d = local(e.at).date;
+		const id = String(e.resident);
+		const buckets = [totals, daily[d], perResident[id]].filter(Boolean);
+		for (const b of buckets) b.entries++;
+		if (e.type === 'incident') {
+			for (const b of buckets) b.incidents++;
+			incidentKinds[e.incident?.kind || 'other'] = (incidentKinds[e.incident?.kind || 'other'] || 0) + 1;
+		}
+		if (e.type === 'visit') for (const b of buckets) b.visits++;
+		if (e.type === 'wellbeing') {
+			if (e.wellbeing?.unwell) unwell.add(`${id}|${d}`);
+			if (e.wellbeing?.mood) moods[e.wellbeing.mood] = (moods[e.wellbeing.mood] || 0) + 1;
+		}
+	}
+	for (const key of unwell) { const id = key.split('|')[0]; if (perResident[id]) perResident[id].unwell_days++; }
+	const rate = (b) => ({ ...b, completion: pct(b.given, b.expected), on_time_rate: pct(b.on_time, b.recorded) });
+	return {
+		totals: { ...rate(totals), unwell_days: unwell.size, residents_unwell: new Set([...unwell].map(k => k.split('|')[0])).size },
+		daily: days.map(d => rate(daily[d])),
+		perResident,
+		moods,
+		incidentKinds,
+		kept,
+	};
+}
+
 //@routes GET api/care/report?from&to
-//@desc Home overview: one row per resident, totals and entries per caregiver (admin)
+//@desc Care analytics for the home (admin): totals against the previous period of the
+// same length, one row per day, per resident (with a daily trend), incidents by kind,
+// moods, staff activity and the incident list
 router.get('/report', auth, staffOnly(['admin']), async (req, res) => {
 	const range = rangeOf(req.query);
 	if (range.error) return fail(res, 400, range.error);
 	try {
+		const length = daysBetween(range.from, range.to).length;
+		const prev = { from: addDays(range.from, -length), to: addDays(range.from, -1) };
 		const residents = await Users.find({ role: 'client', status: { $ne: 'in-active' } }).select('-password').sort({ first_name: 1, last_name: 1 });
 		const ids = residents.map(r => r._id);
 		const [meds, doses, entries] = await Promise.all([
 			medsFor(ids),
-			doseEntriesFor(ids, range.from, range.to),
-			CareEntries.find({ resident: { $in: ids }, at: { $gte: range.start, $lt: range.end } }).lean(),
+			doseEntriesFor(ids, prev.from, range.to),
+			CareEntries.find({ resident: { $in: ids }, at: { $gte: instant(prev.from), $lt: range.end } }).lean(),
 		]);
-		const kept = care.current(entries);
+		const now = periodStats(residents, meds, doses, entries, range.from, range.to);
+		const before = periodStats(residents, meds, doses, entries, prev.from, prev.to);
+
 		const rows = residents.map(r => {
-			const id = String(r._id);
-			const slots = care.doseSlots(meds.filter(m => String(m.resident) === id), doses.filter(d => String(d.resident) === id), range.from, range.to);
-			const mine = kept.filter(e => String(e.resident) === id);
+			const p = now.perResident[String(r._id)];
 			return {
 				_id: r._id,
 				name: care.name(r),
-				...care.tallyDoses(slots),
-				incidents: mine.filter(e => e.type === 'incident').length,
-				visits: mine.filter(e => e.type === 'visit').length,
-				entries: mine.length,
+				scheduled: p.expected + p.due,
+				given: p.given, refused: p.refused, missed: p.missed, not_recorded: p.not_recorded, due: p.due,
+				completion: pct(p.given, p.expected) === null ? null : Math.round(pct(p.given, p.expected)),
+				on_time_rate: pct(p.on_time, p.recorded),
+				incidents: p.incidents, visits: p.visits, entries: p.entries, unwell_days: p.unwell_days,
+				trend: trendPoints(Object.values(p.daily)),
 			};
 		});
-		const totals = { scheduled: 0, given: 0, refused: 0, missed: 0, not_recorded: 0, due: 0, incidents: 0, visits: 0, entries: 0 };
-		for (const r of rows) for (const k of Object.keys(totals)) totals[k] += r[k];
-		const expected = totals.scheduled - totals.due;
-		totals.completion = expected ? Math.round((totals.given / expected) * 100) : null;
+		const t = now.totals;
+		const totals = {
+			scheduled: t.expected + t.due, given: t.given, refused: t.refused, missed: t.missed, not_recorded: t.not_recorded, due: t.due,
+			incidents: t.incidents, visits: t.visits, entries: t.entries,
+			completion: t.completion === null ? null : Math.round(t.completion),
+			completion_exact: t.completion, on_time_rate: t.on_time_rate, unwell_days: t.unwell_days, residents_unwell: t.residents_unwell,
+		};
+		const b = before.totals;
 		const caregivers = {};
-		for (const e of kept) {
+		for (const e of now.kept) {
 			const who = e.author?.name || 'Unknown';
 			caregivers[who] = caregivers[who] || { name: who, role: e.author?.role, entries: 0, doses: 0 };
 			caregivers[who].entries++;
 			if (e.type === 'dose') caregivers[who].doses++;
 		}
+		const kinds = [...new Set([...Object.keys(now.incidentKinds), ...Object.keys(before.incidentKinds)])];
 		const names = Object.fromEntries(residents.map(r => [String(r._id), care.name(r)]));
 		res.send({
 			status: true,
 			data: {
 				from: range.from,
 				to: range.to,
+				days: length,
 				residents: rows,
 				totals,
-				caregivers: Object.values(caregivers).sort((a, b) => b.entries - a.entries),
-				incidents: kept.filter(e => e.type === 'incident').sort((a, b) => b.at - a.at)
+				previous: {
+					from: prev.from, to: prev.to,
+					totals: { completion: b.completion, on_time_rate: b.on_time_rate, refused: b.refused, missed: b.missed, not_recorded: b.not_recorded, incidents: b.incidents, visits: b.visits, entries: b.entries, unwell_days: b.unwell_days, expected: b.expected, given: b.given },
+					daily: before.daily.map(d => ({ date: d.date, completion: d.completion })),
+				},
+				daily: now.daily,
+				incidents_by_kind: kinds.map(k => ({ kind: k, count: now.incidentKinds[k] || 0, previous: before.incidentKinds[k] || 0 })).sort((x, y) => y.count - x.count),
+				moods: now.moods,
+				caregivers: Object.values(caregivers).sort((x, y) => y.entries - x.entries),
+				incidents: now.kept.filter(e => e.type === 'incident').sort((x, y) => y.at - x.at)
 					.map(e => ({ _id: e._id, at: e.at, resident: names[String(e.resident)], ...e.incident, note: e.note, author: e.author?.name })),
 			},
 		});

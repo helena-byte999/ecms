@@ -5,7 +5,6 @@ import { care } from "data/api";
 import { DOSE, timeOf } from "components/care/labels.js";
 import { Pill } from "components/care/CareTimeline.js";
 import { DoseDialog } from "components/care/dialogs.js";
-import "components/care/care.css";
 
 const toMin = (t) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
 const OPEN = ["due", "late"];

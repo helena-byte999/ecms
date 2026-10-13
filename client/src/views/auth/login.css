@@ -168,12 +168,12 @@
   font-size: 17px;
 }
 .ecms-login__demo-btn:nth-child(2) .ecms-login__demo-icon {
-  background: #fde9e3;
-  color: #c4573c;
+  background: var(--info-soft);
+  color: var(--info);
 }
 .ecms-login__demo-btn:nth-child(3) .ecms-login__demo-icon {
-  background: #e6ebf3;
-  color: #2d4266;
+  background: var(--violet-soft);
+  color: var(--violet);
 }
 .ecms-login__demo-text {
   display: flex;

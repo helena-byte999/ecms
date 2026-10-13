@@ -10,10 +10,8 @@ import {
   FiEye,
   FiEyeOff,
   FiFileText,
-  FiHeart,
-  FiShield,
-  FiUsers,
 } from "react-icons/fi";
+import HealthIcon from "components/HealthIcon.js";
 import Brand, { BrandMark } from "components/Brand.js";
 import { authenticate } from "../../data/api";
 import { useAuth } from "../../contexts/AuthContext";
@@ -30,19 +28,19 @@ const DEMO = process.env.REACT_APP_DEMO === "true";
 const demoRoles = [
   {
     role: "admin",
-    icon: <FiShield />,
+    icon: <HealthIcon name="hospital" size={20} />,
     title: "Administrator",
     text: "Manage people, contracts, rotas and invoices",
   },
   {
     role: "caregiver",
-    icon: <FiHeart />,
+    icon: <HealthIcon name="nurse" size={20} />,
     title: "Caregiver",
     text: "See this week's shifts and your contract",
   },
   {
     role: "family",
-    icon: <FiUsers />,
+    icon: <HealthIcon name="family" size={20} />,
     title: "Family member",
     text: "Follow Margaret's care, medicines and invoices",
   },

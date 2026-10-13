@@ -6,7 +6,6 @@ import { Avatar } from "components/ui/ListUI.js";
 import { Pill } from "components/care/CareTimeline.js";
 import { dayLabel, fullName, timeOf } from "components/care/labels.js";
 import MedicineRound from "views/care/MedicineRound.js";
-import "components/care/care.css";
 
 // Residents with today's dose progress and when something was last written down
 export function ResidentGrid({ residents, layout }) {

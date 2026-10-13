@@ -7,15 +7,15 @@ import Contract from "views/admin/Contract";
 import UserPage from "views/admin/User.js";
 import CareHome from "views/care/CareHome.js";
 import ResidentCare from "views/care/ResidentCare.js";
-import CareReports from "views/care/CareReports.js";
+import CareAnalytics from "views/care/CareAnalytics.js";
 import { TeamAdmins } from "components/care/people.js";
-import { FaFileInvoice, FaFileContract, FaHeartbeat, FaChartBar, FaUserShield } from "react-icons/fa";
+import HealthIcon from "components/HealthIcon.js";
 
 var routes = [
   {
     path: "/dashboard",
+    icon_comp: <HealthIcon name="home" size={22} />,
     name: "Dashboard",
-    icon: "nc-icon nc-bank",
     component: Dashboard,
     layout: "/admin",
   },
@@ -29,66 +29,64 @@ var routes = [
   },
   {
     path: "/care",
+    icon_comp: <HealthIcon name="heartbeat" size={22} />,
     name: "Care",
-    icon_comp: <FaHeartbeat size={24} />,
     component: CareHome,
     layout: "/admin",
   },
   {
-    path: "/reports",
-    name: "Care reports",
-    icon_comp: <FaChartBar size={24} />,
-    component: CareReports,
+    path: "/analytics",
+    icon_comp: <HealthIcon name="chartLine" size={22} />,
+    name: "Care analytics",
+    component: CareAnalytics,
     layout: "/admin",
   },
   {
     path: "/invoice",
+    icon_comp: <HealthIcon name="bills" size={22} />,
     name: "Invoice",
-    icon: "nc-icon nc-notes",
-    icon_comp: <FaFileInvoice size={28} />,
     component: Invoice,
     layout: "/admin",
   },
   {
     path: "/caregiver",
+    icon_comp: <HealthIcon name="nurse" size={22} />,
     name: "Care Givers",
-    icon: "nc-icon nc-tile-56",
     component: CareGiver,
     layout: "/admin",
   },
   {
     path: "/clients",
+    icon_comp: <HealthIcon name="elderly" size={22} />,
     name: "Clients",
-    icon: "nc-icon nc-tile-56",
     component: Client,
     layout: "/admin",
   },
   {
     path: "/contract",
+    icon_comp: <HealthIcon name="contract" size={22} />,
     name: "Contract",
-    icon: "nc-icon nc-notes",
-    icon_comp: <FaFileContract size={28} />,
     component: Contract,
     layout: "/admin",
   },
   {
     path: "/schedule",
+    icon_comp: <HealthIcon name="calendar" size={22} />,
     name: "Schedule",
-    icon: "nc-icon nc-watch-time",
     component: Schedule,
     layout: "/admin",
   },
   {
     path: "/team",
+    icon_comp: <HealthIcon name="people" size={22} />,
     name: "Team admins",
-    icon_comp: <FaUserShield size={24} />,
     component: TeamAdmins,
     layout: "/admin",
   },
   {
     path: "/user-page",
+    icon_comp: <HealthIcon name="profile" size={22} />,
     name: "User Profile",
-    icon: "nc-icon nc-single-02",
     component: UserPage,
     layout: "/admin",
   },

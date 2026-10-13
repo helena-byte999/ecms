@@ -6,6 +6,9 @@ import { Route, Switch, Redirect, useLocation } from "react-router-dom";
 import DemoNavbar from "components/Navbars/DemoNavbar.js";
 import Footer from "components/Footer/Footer.js";
 import Sidebar from "components/Sidebar/Sidebar.js";
+// Care, analytics and people screens share one stylesheet, loaded once here so its
+// order relative to other CSS is the same on every page
+import "components/care/care.css";
 
 var ps;
 
