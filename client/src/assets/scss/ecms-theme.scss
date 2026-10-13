@@ -1645,12 +1645,97 @@ textarea.form-control {
   }
 }
 
-// Shown for a moment while a role's area loads after sign-in
-.ecms-route-loading {
-  display: grid;
-  place-items: center;
-  min-height: 100vh;
-  color: var(--muted, #64748b);
+// Loading screen: the ECMS mark with a beating heart and a soft pulse.
+// Fades in after a beat so quick loads don't flash.
+.ecms-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 24px;
+  background: #f4f4f5;
+  color: var(--muted);
   font-family: var(--font);
-  font-size: 15px;
+  font-size: 14.5px;
+  font-weight: 500;
+  text-align: center;
+  animation: ecms-loader-in 0.3s ease 0.15s both;
+
+  p {
+    max-width: 300px;
+    margin: 0;
+  }
+}
+.ecms-loader__mark {
+  position: relative;
+  width: 64px;
+  height: 64px;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 28%;
+    background: var(--teal);
+    animation: ecms-loader-ping 1.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  svg {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 8px 18px rgba(15, 143, 138, 0.28));
+  }
+}
+// Any mark with .ecms-beat gets the heartbeat (also used on the sign-in page)
+.ecms-beat .ecms-brand__heart {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ecms-heartbeat 1.6s ease-in-out infinite;
+}
+@keyframes ecms-heartbeat {
+  0%,
+  45%,
+  100% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(1.3);
+  }
+  24% {
+    transform: scale(1.05);
+  }
+  34% {
+    transform: scale(1.22);
+  }
+}
+@keyframes ecms-loader-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.32;
+  }
+  75%,
+  100% {
+    transform: scale(1.65);
+    opacity: 0;
+  }
+}
+@keyframes ecms-loader-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ecms-loader,
+  .ecms-loader__mark::before,
+  .ecms-beat .ecms-brand__heart {
+    animation: none;
+  }
 }

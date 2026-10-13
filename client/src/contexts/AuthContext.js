@@ -1,7 +1,7 @@
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { authenticate } from "../data/api";
 import Axios from "axios";
-import GridLoader from "react-spinners/GridLoader";
+import Loader from "components/Loader.js";
 
 import { Redirect } from "react-router-dom";
 
@@ -61,45 +61,16 @@ function AuthContextProvider(props) {
   }, []);
   if (isLoading) {
     return (
-      <div style={{ background: "black", width: "100vw", height: "100vh" }}>
-        <div
-          className="loaderDiv"
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-          }}
-        >
-          <GridLoader color={"white"} loading={true} size={40} />
-        </div>
-      </div>
-    );
-  } else if (loggedIn !== undefined || loggedIn !== false) {
-    return (
-      <AuthContext.Provider
-        value={{ loggedIn, getLoggedIn, userDetail, setUserDetail }}
-      >
-        {props.children}
-      </AuthContext.Provider>
-    );
-  } else {
-    return (
-      <div
-        className="loaderDiv"
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-        }}
-      >
-        <GridLoader color={"white"} loading={true} size={40} />
-        <br />
-        Waiting for Authentication...
-      </div>
+      <Loader note="Connecting to the server. If it has been idle, this can take up to a minute." />
     );
   }
+  return (
+    <AuthContext.Provider
+      value={{ loggedIn, getLoggedIn, userDetail, setUserDetail }}
+    >
+      {props.children}
+    </AuthContext.Provider>
+  );
 }
 
 export default AuthContextProvider;

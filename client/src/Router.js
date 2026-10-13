@@ -4,6 +4,7 @@ import { useAuth } from "./contexts/AuthContext";
 
 import Home from "views/home/Home.js";
 import LoginPage from "./views/auth/Login";
+import Loader from "components/Loader.js";
 
 // Each role's area loads only after sign-in, so the landing page stays small
 const AdminLayout = lazy(() => import("layouts/Admin.js"));
@@ -24,13 +25,7 @@ function RouterComp() {
 
   return (
     <BrowserRouter>
-      <Suspense
-        fallback={
-          <div className="ecms-route-loading" role="status">
-            Loading…
-          </div>
-        }
-      >
+      <Suspense fallback={<Loader />}>
         <Switch>
           {/* Public routes */}
           <Route exact path="/" component={Home} />
