@@ -5,7 +5,11 @@ import Schedule from "views/admin/Schedule.js";
 import Invoice from "views/admin/Invoice.js";
 import Contract from "views/admin/Contract";
 import UserPage from "views/admin/User.js";
-import { FaFileInvoice, FaFileContract } from "react-icons/fa";
+import CareHome from "views/care/CareHome.js";
+import ResidentCare from "views/care/ResidentCare.js";
+import CareReports from "views/care/CareReports.js";
+import { TeamAdmins } from "components/care/people.js";
+import { FaFileInvoice, FaFileContract, FaHeartbeat, FaChartBar, FaUserShield } from "react-icons/fa";
 
 var routes = [
   {
@@ -13,6 +17,28 @@ var routes = [
     name: "Dashboard",
     icon: "nc-icon nc-bank",
     component: Dashboard,
+    layout: "/admin",
+  },
+  // a resident's care record (not in the menu; listed before /care so it matches first)
+  {
+    path: "/care/:id",
+    name: "Care",
+    component: ResidentCare,
+    layout: "/admin",
+    hidden: true,
+  },
+  {
+    path: "/care",
+    name: "Care",
+    icon_comp: <FaHeartbeat size={24} />,
+    component: CareHome,
+    layout: "/admin",
+  },
+  {
+    path: "/reports",
+    name: "Care reports",
+    icon_comp: <FaChartBar size={24} />,
+    component: CareReports,
     layout: "/admin",
   },
   {
@@ -50,6 +76,13 @@ var routes = [
     name: "Schedule",
     icon: "nc-icon nc-watch-time",
     component: Schedule,
+    layout: "/admin",
+  },
+  {
+    path: "/team",
+    name: "Team admins",
+    icon_comp: <FaUserShield size={24} />,
+    component: TeamAdmins,
     layout: "/admin",
   },
   {

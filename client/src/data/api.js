@@ -49,6 +49,17 @@ export const user = {
   showAllUsers: `${BackEnd}/api/user/show_all_users`,
   showUserByEmail: `${BackEnd}/api/user/show_user_by_email`,
   setStatus: `${BackEnd}/api/user/set_status`,
+  // family members linked to a resident: GET /family/:residentId
+  family: `${BackEnd}/api/user/family`,
+};
+
+// Care records: residents, today's medicine round, and per resident
+// (`${care.resident}/${id}/entries | medications | visits | summary`)
+export const care = {
+  residents: `${BackEnd}/api/care/residents`,
+  round: `${BackEnd}/api/care/round`,
+  report: `${BackEnd}/api/care/report`,
+  resident: `${BackEnd}/api/care`,
 };
 export const authenticate = {
   //takes in token as http cookie

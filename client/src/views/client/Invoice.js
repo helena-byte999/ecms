@@ -17,7 +17,7 @@ import { FiDownload, FiEye } from "react-icons/fi";
 import { downloadInvoicePdf } from "components/ui/invoicePdf.js";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
-import { useAuth } from "contexts/AuthContext";
+import { useSubject } from "components/care/useSubject.js";
 
 // reactstrap components
 import {
@@ -40,13 +40,13 @@ function Invoices() {
   const [pagination, setPagination] = useState({ current: 1 });
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState({});
-  const { userDetail } = useAuth();
+  const subject = useSubject();
 
   useEffect(
     () => {
       async function fetchInvoices() {
         await axios
-          .get(invoice_api.showInvoice + "/" + userDetail.email, {
+          .get(invoice_api.showInvoice + "/" + subject.email, {
             params: {
               current: pagination.current,
               search,
@@ -152,7 +152,7 @@ function Invoices() {
                           </IconButton>
                           <IconButton
                             label="Download PDF"
-                            onClick={() => downloadInvoicePdf(items, userDetail)}
+                            onClick={() => downloadInvoicePdf(items, subject)}
                           >
                             <FiDownload />
                           </IconButton>

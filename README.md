@@ -15,11 +15,24 @@ A full-stack web application that gives a care home one place to manage its clie
 
 ECMS is role-based. Everyone signs in to the same system and sees only what they need:
 
-- **Administrator** manages clients and caregivers, contracts, the weekly rota and invoices.
-- **Caregiver** sees their shifts (highlighted in the rota), their contract and their invoices.
-- **Client** (an elderly resident or their family) sees their contract, invoices and profile.
+- **Administrator** manages residents, caregivers, families and other admins, contracts, the weekly rota, invoices and care records, and downloads care reports.
+- **Caregiver** runs the daily medicine round, writes the care log, records doctor's visits, and sees their shifts, contract and invoices.
+- **Family member** has their own read-only login to their relative's care log, medicines, contract and invoices.
+- **Client** (the resident) sees the same about themselves.
 
 ## Features
+
+**Care records** (added in 2026, see the [requirements](docs/care-records-requirements.md)):
+
+- **Medicine round**: every dose due today across the home, grouped by time; one tap for *given*, or *refused* / *missed* with a note; late doses stand out
+- **Care log**: meals and drinks, personal care, wellbeing (mood, temperature, unwell), activities, incidents and notes, each stamped with who and when. Entries can't be edited or deleted; mistakes are fixed with a visible correction
+- **Medicines**: each resident's list with times or "as needed", courses with an end date; stopping one keeps the history
+- **Doctor's visits** update the resident's records automatically: medicines started or stopped and changes to allergies and conditions, with a before / after record in the log
+- **Reports**: a care summary per resident (doses given, refused, missed and not recorded; incidents; visits; wellbeing; meals) and a home overview for admins, as **PDF and CSV**
+- **Family access**: each relative gets their own read-only login, linked to one resident
+- **Team admins**: admins can add other admins; you can't deactivate yourself or the last admin
+
+**Running the home:**
 
 - **Role-based dashboards** with server-side permission checks: people only ever see their own records
 - **People**: client and caregiver profiles with medical notes, next of kin and emergency contacts; admins can edit them (changing an email keeps that person's invoices and rotas linked)
@@ -38,6 +51,10 @@ ECMS is role-based. Everyone signs in to the same system and sees only what they
 |----------|---------|
 | ![ECMS homepage](docs/screenshots/home.png) | ![Sign-in page with one-click demo roles](docs/screenshots/login.png) |
 
+| Medicine round (caregiver) | Care log (family member's view) |
+|----------------------------|---------------------------------|
+| ![Today's medicine round with doses given, due and refused](docs/screenshots/care-round.png) | ![A resident's care log seen by her family: allergy, conditions, doses and meals](docs/screenshots/care-family.png) |
+
 | Admin dashboard | Caregiver dashboard (own shifts highlighted) |
 |-----------------|----------------------------------------------|
 | ![Admin dashboard with contracts and weekly rota](docs/screenshots/admin-dashboard.png) | ![Caregiver dashboard with weekly rota](docs/screenshots/caregiver-dashboard.png) |
@@ -48,15 +65,16 @@ _Screenshots use made-up demo data._
 
 ## Try the demo
 
-On the sign-in page, choose **Try as administrator**, **caregiver** or **client**. You can also sign in normally:
+On the sign-in page, choose **administrator**, **caregiver** or **family member**. You can also sign in normally:
 
 | Role | Email | Password |
 |------|-------|----------|
 | Administrator | `admin@example.com` | `ecms-demo` |
 | Caregiver | `caregiver@example.com` | `ecms-demo` |
-| Client | `client@example.com` | `ecms-demo` |
+| Family member (Margaret Okafor's daughter) | `family@example.com` | `ecms-demo` |
+| Client (Margaret Okafor) | `client@example.com` | `ecms-demo` |
 
-Everything in the demo is sample data and resets every night (03:00 UTC), so feel free to add, change or deactivate things. The three demo accounts can't be deactivated or have their email, role or password changed, so they always work for the next visitor. The demo server sleeps when idle, so the first sign-in can take up to a minute.
+Everything in the demo is fictional sample data and resets every night (03:00 UTC), so feel free to add, change or deactivate things. Through the day the sample staff keep recording routine care, leaving the most recent doses for you to record on the medicine round. Look at Margaret Okafor for a doctor's visit that started antibiotics. The demo accounts can't be deactivated or have their email, role or password changed, so they always work for the next visitor. The demo server sleeps when idle, so the first sign-in can take up to a minute.
 
 ## Tech stack
 
@@ -73,9 +91,11 @@ Everything in the demo is sample data and resets every night (03:00 UTC), so fee
 
 The [requirements & design document](docs/requirements.md) has the original 2022 requirements, use-case, ER and class diagrams. Next to them are updated diagrams of the system as built, and a table of which use cases are done. In short:
 
-- **User**: name, email, role (admin / caregiver / client), status (active / on-leave / in-active), contact details, medical notes; contains **Contracts**, **Next of Kin** and **Emergency Contact**
+- **User**: name, email, role (admin / caregiver / client / family), status (active / on-leave / in-active), contact details, medical notes; contains **Contracts**, **Next of Kin** and **Emergency Contact**. Family members link to one resident
 - **Invoice**: client email, amount, type, description, date
 - **Schedule**: week, dates, and the caregivers on duty each day
+- **Medication**: resident, name, dose, times or "as needed", course dates, who added or stopped it and why, and the doctor's visit that started it
+- **CareEntry**: resident, type (dose, meal, personal care, wellbeing, activity, incident, note, doctor's visit), when, author, details, and the entry it corrects
 
 ## Team & my role
 
@@ -112,7 +132,7 @@ npm start                   # http://localhost:3000
 
 ```bash
 cd server
-npm test    # starts the real API against a throwaway MongoDB; no setup needed
+npm test    # API, care records and demo suites against a throwaway MongoDB; no setup needed
 ```
 
 ## Deploying
@@ -135,6 +155,7 @@ npm test    # starts the real API against a throwaway MongoDB; no setup needed
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Creates the first admin on startup if none exists (accounts can only be created by an admin) |
 | `DEMO_MODE` | `true` for a public demo: sample data, one-click demo sign-in, nightly reset. **Never on a database with real care records.** |
 | `DEMO_PASSWORD` | Password for the demo accounts (default `ecms-demo`) |
+| `HOME_TIMEZONE` | The care home's time zone for medicine times (default `Europe/London`) |
 | `LOGIN_RATE_LIMIT` | Sign-in attempts allowed per IP per 15 minutes (default 20) |
 | `ROTA_PER_DAY` | Default caregivers per day when generating a rota (default 5) |
 

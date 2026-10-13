@@ -2,6 +2,8 @@ import Contracts from "views/client/Contract";
 import Dashboard from "views/client/Dashboard.js";
 import Invoice from "views/client/Invoice.js";
 import UserPage from "views/client/User.js";
+import ResidentCare from "views/care/ResidentCare.js";
+import { FaHeartbeat } from "react-icons/fa";
 
 var routes = [
   {
@@ -9,6 +11,13 @@ var routes = [
     name: "Dashboard",
     icon: "nc-icon nc-bank",
     component: Dashboard,
+    layout: "/client",
+  },
+  {
+    path: "/care",
+    name: "Care",
+    icon_comp: <FaHeartbeat size={24} />,
+    component: ResidentCare,
     layout: "/client",
   },
   {

@@ -3,7 +3,8 @@ import axios from "axios";
 import Notifications from "components/Notification/Notification";
 import StatCard from "components/ui/StatCard.js";
 import { formatDate, formatMoney } from "components/ui/ListUI.js";
-import { user } from "data/api";
+import { Link } from "react-router-dom";
+import { care, user } from "data/api";
 import { useAuth } from "contexts/AuthContext";
 import Schedules from "./Schedule";
 
@@ -27,6 +28,10 @@ function contractBadge(contract) {
 function Dashboard() {
   const { userDetail } = useAuth();
   const [c, setCounts] = useState({});
+  const [round, setRound] = useState(null);
+  useEffect(() => {
+    axios.get(care.round).then((res) => setRound(res.data.data)).catch(() => {});
+  }, []);
   const [notificationStatus, setNotificationStatus] = useState(false);
   const [notificationDetails, setNotificationDetails] = useState({ msg: "", type: "" });
 
@@ -46,11 +51,20 @@ function Dashboard() {
 
   const loaded = c.invoices !== undefined;
   const contract = loaded ? contractBadge(c.contract) : {};
+  const r = round?.totals;
+  const late = round ? round.slots.filter((s) => s.status === "late").length : 0;
+  const open = r ? r.due : 0;
   return (
     <>
       {notificationStatus === true ? <Notifications details={notificationDetails} /> : null}
       <div className="content">
         <div className="ecms-stats ecms-stats--3">
+          <StatCard
+            label="Medicine round"
+            value={r ? (open ? `${open} to give` : "Up to date") : undefined}
+            badge={r && (late ? { tone: "bad", text: `${late} late` } : { tone: "ok", text: `${r.given + r.refused + r.missed} of ${r.scheduled} recorded` })}
+            note={<Link to="/caregiver/care">Open today's round</Link>}
+          />
           <StatCard label="Contract" value={contract.value} badge={contract.badge} note="Your current care agreement" />
           <StatCard
             label="To pay"
@@ -64,11 +78,6 @@ function Dashboard() {
                 : { tone: "ok", text: "All paid" })
             }
             note={loaded && `${c.invoices} invoice${c.invoices === 1 ? "" : "s"} in total`}
-          />
-          <StatCard
-            label="Member since"
-            value={userDetail.date_created ? new Date(userDetail.date_created).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : undefined}
-            note="Questions? Contact your care administrator"
           />
         </div>
         <Schedules />

@@ -152,7 +152,11 @@ function Header({ props, routes }) {
                       .filter(Boolean)
                       .join(" ")}
                   </strong>
-                  <small>{userDetail.role}</small>
+                  {userDetail.role === "family" && userDetail.resident ? (
+                    <small style={{ textTransform: "none" }}>Family of {userDetail.resident.first_name}</small>
+                  ) : (
+                    <small>{userDetail.role}</small>
+                  )}
                 </span>
               </Link>
             </NavItem>

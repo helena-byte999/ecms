@@ -3,7 +3,7 @@ import axios from "axios";
 import { user } from "../../data/api";
 import { FaUserCircle } from "react-icons/fa";
 import Notifications from "components/Notification/Notification";
-import { useAuth } from "contexts/AuthContext";
+import { useSubject } from "components/care/useSubject.js";
 
 // reactstrap components
 import { Card, CardBody, Table, Row, Col } from "reactstrap";
@@ -17,13 +17,13 @@ function Contracts() {
     msg: "",
     type: "",
   });
-  const { userDetail } = useAuth();
+  const subject = useSubject();
 
   useEffect(
     () => {
       async function fetchContracts() {
         await axios
-          .get(user.showUserByEmail + "/" + userDetail.email)
+          .get(user.showUserByEmail + "/" + subject.email)
           .then((response) => {
             if (response.data.status === true) {
               setCurrent(response.data.data);

@@ -12,7 +12,8 @@ import {
 import { FiEye } from "react-icons/fi";
 import AccountStatusButton from "components/ui/AccountStatusButton.js";
 import ContractsCard from "components/ui/ContractsCard.js";
-import { useHistory } from "react-router-dom";
+import { FamilyMembers } from "components/care/people.js";
+import { Link, useHistory } from "react-router-dom";
 import Notifications from "components/Notification/Notification";
 import RPagination from "components/Pagination/Pagination";
 
@@ -1196,6 +1197,9 @@ function Clients() {
                 </Card>
               </Col>
               <Col md={4}>
+                <Link to={`/admin/care/${current._id}`} className="btn btn-primary" style={{ width: "100%", marginBottom: 16 }}>
+                  Open care record
+                </Link>
                 <ContractsCard
                   contracts={current.Contracts || []}
                   onAdd={() =>
@@ -1204,6 +1208,7 @@ function Clients() {
                 />
               </Col>
             </Row>
+            {current._id && <FamilyMembers resident={current} />}
           </>
         ) : null}
       </div>

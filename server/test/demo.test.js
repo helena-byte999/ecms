@@ -95,6 +95,15 @@ async function waitFor(server, text, ms = 15000) {
 	check('care report: every resident, mostly given, a few refused, an incident or two', careReport?.residents.length === 12 && careReport.totals.completion >= 85 && careReport.totals.refused > 0 && careReport.incidents.length >= 2, JSON.stringify(careReport?.totals));
 	check('care report: entries come from caregivers on the rota', careReport.caregivers.length >= 3 && careReport.caregivers.every(c => c.role === 'caregiver'));
 	check('a corrected entry is in the sample data', (await call('GET', `/api/care/${careReport.residents.find(r => r.name === 'Edward Lindqvist')._id}/entries?type=meal`, { token: admin.token })).data.data.some(e => e.corrected_by));
+	// The daytime top-up refills routine care that has happened, exactly once
+	await mongoose.connect(uri);
+	const { topUp } = require('../demo');
+	const { local: localTime, instant } = require('../utils/time');
+	const removed = await mongoose.connection.db.collection('careentries').deleteMany({ type: 'meal', at: { $gte: instant(localTime().date) }, corrects: { $exists: false } });
+	const added = await topUp();
+	const again = await topUp();
+	check('daytime top-up refills routine care exactly once', added === removed.deletedCount && again === 0, `${removed.deletedCount} removed, ${added} added, then ${again}`);
+	await mongoose.disconnect();
 	check('family can read the care summary', (await call('GET', `/api/care/${margaretId}/summary`, { token: family.token })).data?.data?.visits.length === 1);
 	check('regular sign-in works with the demo password', (await call('POST', '/api/auth', { body: { email: 'client@example.com', password: 'demo-pass' } })).data?.auth === true);
 	const clientId = myInvoices && (await call('GET', '/api/user/show_user_by_email/client@example.com', { token: admin.token })).data.data._id;

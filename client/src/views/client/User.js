@@ -84,6 +84,19 @@ function User() {
                       </FormGroup>
                     </Col>
                   </Row>
+                  {profile.role === "family" ? (
+                  <Row>
+                    <Col md="12">
+                      <FormGroup>
+                        <label>Family member of</label>
+                        <br />
+                        {[profile.resident?.first_name, profile.resident?.last_name].join(" ")}
+                        {profile.relationship ? ` (${profile.relationship})` : ""}
+                      </FormGroup>
+                    </Col>
+                  </Row>
+                  ) : (
+                  <>
                   <Row>
                     <Col md="12">
                       <FormGroup>
@@ -190,6 +203,8 @@ function User() {
                       </FormGroup>
                     </Col>
                   </Row>
+                  </>
+                  )}
                 </Form>
               </CardBody>
             </Card>

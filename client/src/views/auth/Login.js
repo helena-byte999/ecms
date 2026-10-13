@@ -41,10 +41,10 @@ const demoRoles = [
     text: "See this week's shifts and your contract",
   },
   {
-    role: "client",
+    role: "family",
     icon: <FiUsers />,
-    title: "Client or family",
-    text: "See the care contract and invoices",
+    title: "Family member",
+    text: "Follow Margaret's care, medicines and invoices",
   },
 ];
 

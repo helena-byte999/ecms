@@ -177,30 +177,87 @@ function seeded(seed) {
 	let x = seed % 2147483647 || 1;
 	return () => (x = (x * 16807) % 2147483647) / 2147483647;
 }
+const dayNumber = (date) => Math.floor(Date.parse(date + 'T12:00:00Z') / DAY);
+const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const stamp = (d) => { const l = local(d); return `${l.date} ${l.time}`; };
 
-// A week of care records written by the caregivers on each day's rota, medicine
-// lists for every resident, and a GP visit for Margaret Okafor (the demo client)
-async function seedCare(residents, caregivers, rotas, now) {
-	const today = local(new Date(now));
+// One resident's routine day: personal care, meals, drinks, maybe an activity,
+// wellbeing, and their doses (nearly all given; the odd refusal, missed dose or gap).
+// Times and outcomes are repeatable for a given resident and date, so the nightly
+// reset and the daytime top-up produce the same entries.
+// Returns [{ time, slot (dose time, for doses), by, fields }]
+function routineDay(i, date, meds, staff, ill) {
+	const rand = seeded(dayNumber(date) * 131 + i * 97 + 7);
+	const n = dayNumber(date);
+	const pick = () => staff[Math.floor(rand() * staff.length)];
+	const out = [];
+	out.push({ time: '07:40', by: pick(), fields: { type: 'care', care: { tasks: ['wash', 'dress', 'oral_care', ...(n % 3 === i % 3 ? ['shower'] : []), ...(i % 4 === 3 ? ['continence'] : [])] } } });
+	for (const [meal, time, ml] of [['breakfast', '08:30', 200], ['lunch', '12:30', 150], ['dinner', '17:30', 200]]) {
+		const eaten = ill ? (rand() < 0.5 ? 'little' : 'half') : ['all', 'all', 'most', 'all', 'half'][Math.floor(rand() * 5)];
+		out.push({ time, by: pick(), fields: { type: 'meal', meal: { meal, eaten, drink_ml: ml } } });
+	}
+	out.push({ time: '15:30', by: pick(), fields: { type: 'meal', meal: { meal: 'drink', drink_ml: ill ? 300 : 200 }, note: ill ? 'Encouraged extra fluids.' : '' } });
+	if (rand() < 0.5) out.push({ time: '14:30', by: pick(), fields: { type: 'activity', activity: { name: ACTIVITIES[(i + n) % ACTIVITIES.length] } } });
+	out.push({ time: '19:30', by: pick(), fields: { type: 'wellbeing', wellbeing: { mood: ill ? 'low' : MOODS[(i * 3 + n) % MOODS.length], unwell: ill } } });
+
+	for (const m of meds) {
+		if (m.as_needed || date < m.start_date || (m.end_date && date > m.end_date)) continue;
+		for (const t of m.times) {
+			const key = `${date} ${t}`;
+			if (key < stamp(m.added_at) || (m.status === 'stopped' && m.stopped_at && key >= stamp(m.stopped_at))) continue;
+			const by = pick();
+			const offset = 5 + Math.floor(rand() * 20);
+			if (rand() < 0.015) continue; // left unrecorded
+			const roll = rand();
+			const outcome = roll < 0.04 ? 'refused' : roll < 0.05 ? 'missed' : 'given';
+			const note = outcome === 'refused' ? 'Refused. Offered again 30 minutes later, still refused.' : outcome === 'missed' ? 'Out at a hospital appointment.' : '';
+			out.push({ time: hhmm(minutes(t) + offset), slot: t, by, fields: { type: 'dose', note, dose: { medication: m._id, name: m.name, dose: m.dose, date, time: t, outcome } } });
+		}
+	}
+	return out;
+}
+
+// Has it happened yet? Doses from the last 50 minutes are left for visitors to record
+// (with the 15-minute top-up they show as "due", rarely "late").
+function happened(x, date, today) {
+	if (date < today.date) return true;
 	const nowMin = minutes(today.time);
+	return x.slot ? minutes(x.slot) <= nowMin - 50 : minutes(x.time) <= nowMin - 5;
+}
+
+const author = (u) => ({ id: u._id, name: `${u.first_name} ${u.last_name}`, role: u.role });
+const careEntry = (resident, date, x) => {
+	const at = instant(date, x.time);
+	return { _id: new mongoose.Types.ObjectId(), resident: resident._id, at, created_at: new Date(at.getTime() + 2 * 60000), author: author(x.by), ...x.fields };
+};
+
+// Caregivers on the rota for a date (everyone active if there's no rota)
+function onShiftFrom(rotas, caregivers) {
 	const byEmail = Object.fromEntries(caregivers.map(c => [c.email, c]));
-	const onShift = (date) => {
+	return (date) => {
 		const r = rotas.find(x => x.first <= date && date <= x.last);
 		const day = (new Date(date + 'T12:00:00Z').getUTCDay() + 6) % 7;
 		const people = (r?.rota[day] || []).map(p => byEmail[p.email]).filter(Boolean);
 		return people.length ? people : caregivers;
 	};
-	const author = (u) => ({ id: u._id, name: `${u.first_name} ${u.last_name}`, role: u.role });
+}
+// Margaret (resident 0) had a chest infection 2-4 days before the last reset
+const isIll = (i, date, resetDay) => i === 0 && date >= addDays(resetDay, -4) && date <= addDays(resetDay, -2);
+
+// A week of care records written by the caregivers on each day's rota, medicine
+// lists for every resident, and a GP visit for Margaret Okafor (the demo client)
+async function seedCare(residents, caregivers, rotas, now) {
+	const today = local(new Date(now));
+	const onShift = onShiftFrom(rotas, caregivers);
 	const entries = [];
 	const meds = [];
 	const add = (resident, date, time, by, fields) => {
-		if (date === today.date && minutes(time) > nowMin - 5) return null; // not yet happened
-		const e = { _id: new mongoose.Types.ObjectId(), resident: resident._id, at: instant(date, time), author: author(by), ...fields };
-		e.created_at = new Date(e.at.getTime() + 2 * 60000);
+		const x = { time, by, fields };
+		if (!happened(x, date, today)) return null;
+		const e = careEntry(resident, date, x);
 		entries.push(e);
 		return e;
 	};
-	const hhmm = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 	const longAgo = addDays(today.date, -120);
 
 	residents.forEach((r, i) => {
@@ -224,35 +281,11 @@ async function seedCare(residents, caregivers, rotas, now) {
 	meds.push(amoxicillin);
 
 	residents.forEach((r, i) => {
-		const rand = seeded(1000 + i * 97);
 		const mine = meds.filter(m => String(m.resident) === String(r._id));
-		const ill = (date) => r === margaret && date >= addDays(today.date, -4) && date <= addDays(today.date, -2);
 		for (let back = 6; back >= 0; back--) {
 			const date = addDays(today.date, -back);
-			const staff = onShift(date);
-			const pick = () => staff[Math.floor(rand() * staff.length)];
-
-			add(r, date, '07:40', pick(), { type: 'care', care: { tasks: ['wash', 'dress', 'oral_care', ...(back % 3 === i % 3 ? ['shower'] : []), ...(i % 4 === 3 ? ['continence'] : [])] } });
-			for (const [meal, time, ml] of [['breakfast', '08:30', 200], ['lunch', '12:30', 150], ['dinner', '17:30', 200]]) {
-				const eaten = ill(date) ? (rand() < 0.5 ? 'little' : 'half') : ['all', 'all', 'most', 'all', 'half'][Math.floor(rand() * 5)];
-				add(r, date, time, pick(), { type: 'meal', meal: { meal, eaten, drink_ml: ml } });
-			}
-			add(r, date, '15:30', pick(), { type: 'meal', meal: { meal: 'drink', drink_ml: ill(date) ? 300 : 200 }, note: ill(date) ? 'Encouraged extra fluids.' : '' });
-			if (rand() < 0.5) add(r, date, '14:30', pick(), { type: 'activity', activity: { name: ACTIVITIES[(i + back) % ACTIVITIES.length] } });
-			add(r, date, '19:30', pick(), { type: 'wellbeing', wellbeing: { mood: ill(date) ? 'low' : MOODS[(i * 3 + back) % MOODS.length], unwell: ill(date) } });
-
-			// doses: nearly all given; the odd refusal, a missed dose, and a few left unrecorded
-			for (const m of mine) {
-				if (m.as_needed || date < m.start_date || (m.end_date && date > m.end_date)) continue;
-				for (const t of m.times) {
-					if (`${date} ${t}` < `${local(m.added_at).date} ${local(m.added_at).time}`) continue;
-					const late = date === today.date && minutes(t) > nowMin - 90; // leave the last hour or so for the round
-					if (late || rand() < 0.015) continue;
-					const roll = rand();
-					const outcome = roll < 0.04 ? 'refused' : roll < 0.05 ? 'missed' : 'given';
-					const note = outcome === 'refused' ? 'Refused. Offered again 30 minutes later, still refused.' : outcome === 'missed' ? 'Out at a hospital appointment.' : '';
-					add(r, date, hhmm(minutes(t) + 5 + Math.floor(rand() * 20)), pick(), { type: 'dose', note, dose: { medication: m._id, name: m.name, dose: m.dose, date, time: t, outcome } });
-				}
+			for (const x of routineDay(i, date, mine, onShift(date), isIll(i, date, today.date))) {
+				if (happened(x, date, today)) entries.push(careEntry(r, date, x));
 			}
 		}
 	});
@@ -331,11 +364,53 @@ async function resetIfDue() {
 	}
 }
 
+// Through the day the sample staff keep recording routine care and doses, so the
+// demo doesn't fill up with late doses. Anything already recorded (by the reset or a
+// visitor) is skipped, and the last 50 minutes of doses are left for visitors.
+// Returns how many entries were added.
+async function topUp(now = new Date()) {
+	try {
+		const reset = await Meta.findOne({ key: 'demo_last_reset' });
+		if (!reset) return 0;
+		const today = local(now);
+		const residents = await Users.find({ role: 'client', status: { $ne: 'in-active' } });
+		const caregivers = await Users.find({ role: 'caregiver', status: 'active' });
+		const rota = await Schedule.findOne({ start_date: { $lte: today.date }, end_date: { $gte: today.date } }).lean();
+		const onShift = onShiftFrom(rota ? [{ first: rota.start_date, last: rota.end_date, rota: rota.schedule }] : [], caregivers);
+		const ids = residents.map(r => r._id);
+		const meds = await Medications.find({ resident: { $in: ids } }).lean();
+		const existing = await CareEntries.find({ resident: { $in: ids }, at: { $gte: instant(today.date) } }).select('resident type at dose').lean();
+		const doseDone = new Set(existing.filter(e => e.type === 'dose' && e.dose?.date === today.date).map(e => `${e.dose.medication}|${e.dose.time}`));
+		const atDone = new Set(existing.map(e => `${e.resident}|${e.type}|${new Date(e.at).getTime()}`));
+		const resetDay = local(reset.value).date;
+		const fresh = [];
+		for (const r of residents) {
+			const i = clients.findIndex(c => c[2] === r.email);
+			if (i < 0) continue;
+			const mine = meds.filter(m => String(m.resident) === String(r._id));
+			for (const x of routineDay(i, today.date, mine, onShift(today.date), isIll(i, today.date, resetDay))) {
+				if (!happened(x, today.date, today)) continue;
+				const done = x.slot ? doseDone.has(`${x.fields.dose.medication}|${x.slot}`) : atDone.has(`${r._id}|${x.fields.type}|${instant(today.date, x.time).getTime()}`);
+				if (!done) fresh.push(careEntry(r, today.date, x));
+			}
+		}
+		if (fresh.length) await CareEntries.insertMany(fresh);
+		return fresh.length;
+	} catch (err) {
+		console.error('Demo top-up failed', err);
+		return 0;
+	}
+}
+
 // Free hosting sleeps when idle, so check on startup as well as every 15 minutes
 function start(mongoose) {
 	if (!enabled()) return;
-	mongoose.connection.once('open', resetIfDue);
-	setInterval(resetIfDue, 15 * 60 * 1000).unref();
+	const tick = async () => {
+		await resetIfDue();
+		await topUp();
+	};
+	mongoose.connection.once('open', tick);
+	setInterval(tick, 15 * 60 * 1000).unref();
 }
 
-module.exports = { enabled, ACCOUNTS, isDemoAccount, resetDemoData, start };
+module.exports = { enabled, ACCOUNTS, isDemoAccount, resetDemoData, topUp, start };
